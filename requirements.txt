@@ -1,0 +1,10 @@
+fastapi==0.139.2
+uvicorn[standard]==0.51.0
+pillow==12.3.0
+numpy==2.5.1
+trimesh==4.12.2
+manifold3d==3.5.2
+shapely==2.1.2
+networkx==3.6.1
+scipy==1.18.0
+python-multipart==0.0.32
