@@ -12,6 +12,9 @@ limits.
 - **Live 3D preview** (Three.js) that updates instantly as you drag sliders,
   at a resolution that tracks your Detail setting so the preview isn't
   blocky even at high detail
+- **Crop, pan, and zoom** — drag the photo to reposition it and scroll/slide
+  to zoom before it's baked into the panel, instead of always using the
+  whole image squashed to fit
 - **Simulated backlight preview** — a one-click toggle that switches the
   preview to an unlit, glowing render approximating how the print looks
   with a light behind it, so you can judge contrast/detail before printing
@@ -66,30 +69,35 @@ Then open http://127.0.0.1:8420 in your browser.
 3. Optionally add a **Border / mat** — a flat, uniform-thickness rim baked
    around the image, like a picture-frame mat. It follows whatever shape
    you pick (rectangular, heart outline, etc).
-4. Pick a shape. Curved wrap needs a curve angle (degrees the panel bends
+4. Use **Crop & position** to control exactly what shows: drag the photo to
+   reposition it, scroll or use the Zoom slider to crop in tighter. At
+   1.0x zoom you get a "cover" fit — the largest region of the photo that
+   matches your panel's aspect ratio, with nothing squashed or distorted.
+   Click **Reset** to go back to that default framing.
+6. Pick a shape. Curved wrap needs a curve angle (degrees the panel bends
    through); circle/heart clip the panel (and its border) to that outline.
-5. Dial in min/max thickness. Min thickness is the brightest/thinnest area
+7. Dial in min/max thickness. Min thickness is the brightest/thinnest area
    (lets the most light through); max thickness is the darkest/thickest
    area — the border is solid at max thickness. A good starting point for
    FDM printing is 0.8mm min / 3.0mm max with a 0.4mm nozzle — thinner min
    than your nozzle can reliably extrude will look inconsistent.
-6. Bump the **Detail** slider for finer surface resolution on close-up or
+8. Bump the **Detail** slider for finer surface resolution on close-up or
    high-contrast photos — this also sharpens the live preview, not just
    the export. Higher detail means a heavier mesh and slower export
    (boolean-based shapes — circle, heart, the frame, the box — take longer
    at high detail).
-7. Toggle **Simulate backlight** above the viewer to see an approximation
+9. Toggle **Simulate backlight** above the viewer to see an approximation
    of how the print glows with a light behind it — this is the best way to
    catch contrast problems (too washed out, or too dark/muddy) before you
    commit to printing. It's preview-only; it doesn't affect the export.
    This view is rendered from a separate, higher-resolution image sent
    just for display, so it stays sharp even on small panels or low Detail
    settings where the print mesh itself is coarse.
-8. Optionally enable the backlight box and/or snap-on frame (flat shape
-   only). These export as their own STL files, sized to fit the panel
-   (border included) with a small tolerance.
-9. Click **Download STL**. A single shape downloads as a `.stl`; if you've
-   enabled the box or frame it downloads as a `.zip` with all the parts.
+10. Optionally enable the backlight box and/or snap-on frame (flat shape
+    only). These export as their own STL files, sized to fit the panel
+    (border included) with a small tolerance.
+11. Click **Download STL**. A single shape downloads as a `.stl`; if you've
+    enabled the box or frame it downloads as a `.zip` with all the parts.
 
 The in-browser preview matches the exported file's resolution almost
 exactly at typical sizes (e.g. a 100mm panel at the default 2.5 pts/mm
@@ -108,12 +116,19 @@ together.
 ## How it works
 
 - `app/imaging.py` — resamples the photo to a heightmap grid, with
-  brightness/contrast/gamma/invert applied server-side. Also renders a
+  brightness/contrast/gamma/invert applied server-side. `crop_to_frame`
+  extracts the sub-rectangle chosen by the crop editor (matching the
+  panel's aspect ratio) before anything else happens, so cropping is a
+  real pixel-level operation, not a display trick. Also renders a
   separate, higher-resolution grayscale PNG (`build_backlight_texture`)
   used only for the Simulate Backlight preview — it's sampled per-pixel
   by the GPU as a texture rather than interpolated per-vertex like the
   mesh's own geometry, so the backlit preview doesn't inherit the print
   mesh's (deliberately capped) resolution.
+- `static/js/crop.js` — the drag-to-pan/zoom crop editor. Its state is
+  three numbers (scale, center_x, center_y, as fractions of the source
+  photo) that map directly onto `crop_to_frame`'s parameters, so the crop
+  shown in the editor is exactly what the server crops to.
 - `app/shapes.py` — converts the heightmap into vertex grids for flat and
   curved panels, and clips novelty shapes (circle/heart) via a boolean
   intersection with an extruded polygon.

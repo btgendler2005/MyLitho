@@ -16,6 +16,10 @@ class LithophaneParams(BaseModel):
 
     border_mm: float = Field(0.0, ge=0.0, le=60.0)
 
+    crop_scale: float = Field(1.0, ge=1.0, le=6.0)
+    crop_center_x: float = Field(0.5, ge=0.0, le=1.0)
+    crop_center_y: float = Field(0.5, ge=0.0, le=1.0)
+
     shape: ShapeType = "flat"
     curve_degrees: float = Field(120.0, ge=10, le=340)
 

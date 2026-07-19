@@ -110,6 +110,52 @@ input[type="file"] {
   font-size: 0.85rem;
 }
 
+.crop-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.crop-viewport {
+  position: relative;
+  width: 100%;
+  min-height: 120px;
+  max-height: 320px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #000;
+  cursor: grab;
+  touch-action: none;
+}
+
+.crop-viewport.dragging {
+  cursor: grabbing;
+}
+
+.crop-viewport img {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.crop-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
 fieldset.field-group {
   border: 1px solid var(--border);
   border-radius: 8px;

@@ -66,6 +66,47 @@ def target_grid_size(
     return cols, rows
 
 
+def crop_to_frame(
+    img: Image.Image,
+    width_mm: float,
+    height_mm: float,
+    scale: float,
+    center_x: float,
+    center_y: float,
+) -> Image.Image:
+    """Extract the sub-rectangle of `img` that will fill the panel.
+
+    scale=1.0 picks the largest rectangle matching the panel's aspect
+    ratio that fits inside the source photo (a "cover" fit -- uses as
+    much of the source as possible with no distortion or empty space).
+    scale>1 shrinks that rectangle around (center_x, center_y) -- given
+    as fractions of the source image's width/height -- to zoom in.
+    Clamped so the crop window never leaves the source image bounds.
+    """
+    target_aspect = width_mm / height_mm
+    src_w, src_h = img.size
+    src_aspect = src_w / src_h
+
+    if src_aspect > target_aspect:
+        base_h = float(src_h)
+        base_w = src_h * target_aspect
+    else:
+        base_w = float(src_w)
+        base_h = src_w / target_aspect
+
+    scale = max(1.0, scale)
+    crop_w = base_w / scale
+    crop_h = base_h / scale
+
+    cx = min(max(center_x, 0.0), 1.0) * src_w
+    cy = min(max(center_y, 0.0), 1.0) * src_h
+
+    x0 = min(max(cx - crop_w / 2, 0.0), src_w - crop_w)
+    y0 = min(max(cy - crop_h / 2, 0.0), src_h - crop_h)
+
+    return img.crop((round(x0), round(y0), round(x0 + crop_w), round(y0 + crop_h)))
+
+
 def _capped_display_size(width_mm: float, height_mm: float, max_px: int) -> tuple[int, int]:
     aspect = width_mm / height_mm
     if aspect >= 1:

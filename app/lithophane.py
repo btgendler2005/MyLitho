@@ -27,8 +27,15 @@ def _bordered_dims(params: LithophaneParams) -> tuple[float, float]:
     return params.width_mm + 2 * params.border_mm, params.height_mm + 2 * params.border_mm
 
 
-def build_preview_heightmap(image_bytes: bytes, params: LithophaneParams) -> dict:
+def _cropped_image(image_bytes: bytes, params: LithophaneParams):
     img = imaging.load_image(image_bytes)
+    return imaging.crop_to_frame(
+        img, params.width_mm, params.height_mm, params.crop_scale, params.crop_center_x, params.crop_center_y
+    )
+
+
+def build_preview_heightmap(image_bytes: bytes, params: LithophaneParams) -> dict:
+    img = _cropped_image(image_bytes, params)
     cols, rows = imaging.target_grid_size(
         params.width_mm, params.height_mm, points_per_mm=params.detail, max_points=PREVIEW_MAX_POINTS
     )
@@ -63,7 +70,7 @@ def build_panel_mesh(image_bytes: bytes, params: LithophaneParams) -> trimesh.Tr
     is_boolean_shape = params.shape in ("circle", "heart")
     max_points = FINAL_MAX_POINTS_BOOLEAN if is_boolean_shape else FINAL_MAX_POINTS_SIMPLE
 
-    img = imaging.load_image(image_bytes)
+    img = _cropped_image(image_bytes, params)
     cols, rows = imaging.target_grid_size(params.width_mm, params.height_mm, points_per_mm=params.detail, max_points=max_points)
     heightmap = imaging.image_to_heightmap(
         img, cols, rows, params.invert, params.brightness, params.contrast, params.gamma

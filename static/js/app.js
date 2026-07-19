@@ -1,5 +1,6 @@
 import { initViewer, setPreviewMesh, setBacklightMode, loadBacklightTextureFromBase64 } from "./viewer.js";
 import { buildFlatGeometry, buildCurvedGeometry, circleMask, heartMask } from "./meshgen.js";
+import { initCropEditor, setImage as setCropImage, setTargetAspect, resetCrop, getCropParams, setZoom as setCropZoom } from "./crop.js";
 
 const el = (id) => document.getElementById(id);
 
@@ -12,6 +13,12 @@ const state = {
 
 initViewer(el("viewer"));
 
+initCropEditor(el("cropViewport"), el("cropImage"), (params) => {
+  el("cropZoom").value = params.crop_scale.toFixed(2);
+  el("cropZoomVal").textContent = params.crop_scale.toFixed(2) + "x";
+  scheduleFetchPreview();
+});
+
 function paramsFromUI() {
   return {
     width_mm: parseFloat(el("widthMm").value),
@@ -20,6 +27,7 @@ function paramsFromUI() {
     max_thickness_mm: parseFloat(el("maxThickness").value),
     detail: parseFloat(el("detail").value),
     border_mm: parseFloat(el("borderMm").value),
+    ...getCropParams(),
     shape: el("shape").value,
     curve_degrees: parseFloat(el("curveDegrees").value),
     invert: el("invert").checked,
@@ -117,6 +125,11 @@ function rebuildGeometry() {
   setPreviewMesh(geo);
 }
 
+function updateCropAspect() {
+  const aspect = parseFloat(el("widthMm").value) / parseFloat(el("heightMm").value);
+  setTargetAspect(aspect);
+}
+
 el("fileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -128,6 +141,11 @@ el("fileInput").addEventListener("change", (e) => {
       el("heightMm").value = (parseFloat(el("widthMm").value) / state.imageAspect).toFixed(1);
     }
     URL.revokeObjectURL(img.src);
+    el("cropSection").hidden = false;
+    setCropImage(file);
+    el("cropZoom").value = 1;
+    el("cropZoomVal").textContent = "1.00x";
+    updateCropAspect();
     fetchPreview();
   };
   img.src = URL.createObjectURL(file);
@@ -141,9 +159,23 @@ el("fileInput").addEventListener("change", (e) => {
     if (id === "heightMm" && el("lockAspect").checked && state.imageAspect) {
       el("widthMm").value = (parseFloat(el("heightMm").value) * state.imageAspect).toFixed(1);
     }
+    if (id === "widthMm" || id === "heightMm") {
+      updateCropAspect();
+    }
     updateValLabels();
     scheduleFetchPreview();
   });
+});
+
+el("cropZoom").addEventListener("input", () => {
+  setCropZoom(parseFloat(el("cropZoom").value));
+  el("cropZoomVal").textContent = parseFloat(el("cropZoom").value).toFixed(2) + "x";
+});
+
+el("cropResetBtn").addEventListener("click", () => {
+  resetCrop();
+  el("cropZoom").value = 1;
+  el("cropZoomVal").textContent = "1.00x";
 });
 
 [
