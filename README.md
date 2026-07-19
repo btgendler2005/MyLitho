@@ -21,7 +21,17 @@ limits.
 - Output is a watertight, manifold mesh ready to slice directly — no repair
   needed in your slicer
 
-## Setup
+## Run (macOS, easiest)
+
+Double-click **`run.command`** in Finder. First run installs everything
+automatically (takes a minute); every run after that starts instantly.
+Your browser opens to the app on its own. To stop it, close the terminal
+window that pops up (or press Ctrl+C in it).
+
+If macOS blocks it as an unidentified script the first time, right-click
+`run.command` → **Open** → confirm.
+
+## Setup (manual / other platforms)
 
 Requires Python 3.10+.
 
@@ -32,7 +42,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run
+## Run (manual)
 
 ```bash
 source .venv/bin/activate
