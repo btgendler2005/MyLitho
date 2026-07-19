@@ -88,8 +88,19 @@ Then open http://127.0.0.1:8420 in your browser.
 9. Click **Download STL**. A single shape downloads as a `.stl`; if you've
    enabled the box or frame it downloads as a `.zip` with all the parts.
 
-The in-browser preview uses a lower mesh resolution than the exported file
-for responsiveness — the download is generated at your full Detail setting.
+The in-browser preview matches the exported file's resolution almost
+exactly at typical sizes (e.g. a 100mm panel at the default 2.5 pts/mm
+detail renders at the *same* 250x250 grid in both preview and export).
+It only falls a bit behind the export at the extreme end — very large
+panels combined with max Detail — since the preview is still capped a bit
+lower than boolean-free (flat/curved) exports to stay smooth in the
+browser. Novelty shapes (circle/heart) are capped lower on export than in
+preview, because clipping them to their outline is a boolean operation
+that gets slow at high resolution — so for those two shapes the preview
+can actually look *finer* than the final file. If you want to sanity-check
+resolution for your own settings: preview and export both derive from the
+same `width_mm/height_mm x Detail`, so bumping Detail sharpens both
+together.
 
 ## How it works
 

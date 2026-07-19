@@ -8,9 +8,12 @@ from . import accessories, geometry, imaging, shapes
 from .models import LithophaneParams
 
 # Preview resolution tracks the user's Detail slider (like the final
-# export does) so cranking Detail sharpens the live view too, capped here
-# for interactive frame rates in the browser.
-PREVIEW_MAX_POINTS = 220
+# export does) so cranking Detail sharpens the live view too. Preview never
+# does server-side booleans (novelty shapes are masked cheaply in JS), so
+# this can go nearly as high as the boolean-free final export cap without
+# a performance hit -- the goal is for preview and final STL to match at
+# typical panel sizes/detail settings, not just be "close."
+PREVIEW_MAX_POINTS = 550
 
 # Booleans (novelty shape clipping) get noticeably slower with resolution,
 # so cap those exports lower than the boolean-free flat/curved path.
