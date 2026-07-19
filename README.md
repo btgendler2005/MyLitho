@@ -9,13 +9,20 @@ limits.
 
 ## Features
 
-- **Live 3D preview** (Three.js) that updates instantly as you drag sliders
+- **Live 3D preview** (Three.js) that updates instantly as you drag sliders,
+  at a resolution that tracks your Detail setting so the preview isn't
+  blocky even at high detail
+- **Simulated backlight preview** — a one-click toggle that switches the
+  preview to an unlit, glowing render approximating how the print looks
+  with a light behind it, so you can judge contrast/detail before printing
 - **Shapes**: flat rectangular panel, curved wrap (for lamps/cylinders),
   circle/ornament, and heart
+- **Border/mat** — an optional flat-thickness border baked right into the
+  panel, like a picture-frame mat, in any shape
 - **Optional hanging hole** for ornaments
 - **Optional companion parts**, exported as separate STL files sized to fit
-  the panel: an LED backlight box (with a cord slot) and a snap-on frame
-  (rabbeted so the panel friction-fits into it)
+  the panel (border included): an LED backlight box (with a cord slot) and
+  a snap-on frame (rabbeted so the panel friction-fits into it)
 - Adjustable size, min/max thickness, mesh detail/resolution, brightness,
   contrast, gamma, and invert
 - Output is a watertight, manifold mesh ready to slice directly — no repair
@@ -56,25 +63,33 @@ Then open http://127.0.0.1:8420 in your browser.
 1. Choose a photo.
 2. Set the physical size (width/height in mm) — aspect ratio locks to the
    photo by default.
-3. Pick a shape. Curved wrap needs a curve angle (degrees the panel bends
-   through); circle/heart clip the panel to that outline.
-4. Dial in min/max thickness. Min thickness is the brightest/thinnest area
+3. Optionally add a **Border / mat** — a flat, uniform-thickness rim baked
+   around the image, like a picture-frame mat. It follows whatever shape
+   you pick (rectangular, heart outline, etc).
+4. Pick a shape. Curved wrap needs a curve angle (degrees the panel bends
+   through); circle/heart clip the panel (and its border) to that outline.
+5. Dial in min/max thickness. Min thickness is the brightest/thinnest area
    (lets the most light through); max thickness is the darkest/thickest
-   area. A good starting point for FDM printing is 0.8mm min / 3.0mm max
-   with a 0.4mm nozzle — thinner min than your nozzle can reliably extrude
-   will look inconsistent.
-5. Bump the **Detail** slider for finer surface resolution on close-up or
-   high-contrast photos. Higher detail means a heavier mesh and slower
-   export (boolean-based shapes — circle, heart, the frame, the box — take
-   longer at high detail).
-6. Optionally enable the backlight box and/or snap-on frame (flat shape
-   only). These export as their own STL files, dimensioned to fit the
-   panel with a small tolerance.
-7. Click **Download STL**. A single shape downloads as a `.stl`; if you've
+   area — the border is solid at max thickness. A good starting point for
+   FDM printing is 0.8mm min / 3.0mm max with a 0.4mm nozzle — thinner min
+   than your nozzle can reliably extrude will look inconsistent.
+6. Bump the **Detail** slider for finer surface resolution on close-up or
+   high-contrast photos — this also sharpens the live preview, not just
+   the export. Higher detail means a heavier mesh and slower export
+   (boolean-based shapes — circle, heart, the frame, the box — take longer
+   at high detail).
+7. Toggle **Simulate backlight** above the viewer to see an approximation
+   of how the print glows with a light behind it — this is the best way to
+   catch contrast problems (too washed out, or too dark/muddy) before you
+   commit to printing. It's preview-only; it doesn't affect the export.
+8. Optionally enable the backlight box and/or snap-on frame (flat shape
+   only). These export as their own STL files, sized to fit the panel
+   (border included) with a small tolerance.
+9. Click **Download STL**. A single shape downloads as a `.stl`; if you've
    enabled the box or frame it downloads as a `.zip` with all the parts.
 
 The in-browser preview uses a lower mesh resolution than the exported file
-for responsiveness — the download is generated at your full detail setting.
+for responsiveness — the download is generated at your full Detail setting.
 
 ## How it works
 
@@ -94,8 +109,17 @@ for responsiveness — the download is generated at your full detail setting.
 - `static/` — the frontend. `meshgen.js` mirrors the flat/curved position
   math from `shapes.py` in JavaScript so the live preview can rebuild
   instantly on the client without a round trip for every slider tweak;
-  only image adjustments (brightness/contrast/gamma/invert) or a new photo
-  trigger a server call to `/api/preview`.
+  image adjustments, size, and border changes trigger a server call to
+  `/api/preview` (they change the heightmap itself), while shape/thickness/
+  curve changes redraw instantly from the already-fetched heightmap.
+- The **border** is implemented by padding the heightmap with 0.0-value
+  pixels before meshing (`imaging.apply_border`) — since a 0.0 pixel maps
+  to max thickness under the existing thickness formula, this reuses all
+  the normal mesh-building and shape-masking code with no special case.
+- The **backlight preview** colors each preview vertex directly from its
+  heightmap value (the same brightness value used to compute thickness) so
+  thin/bright areas glow and thick/dark areas stay dark, rendered with an
+  unlit vertex-colored material on a black background.
 
 ## Notes for production use
 

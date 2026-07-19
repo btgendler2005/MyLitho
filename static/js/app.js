@@ -1,4 +1,4 @@
-import { initViewer, setPreviewMesh } from "./viewer.js";
+import { initViewer, setPreviewMesh, setBacklightMode } from "./viewer.js";
 import { buildFlatGeometry, buildCurvedGeometry, circleMask, heartMask } from "./meshgen.js";
 
 const el = (id) => document.getElementById(id);
@@ -19,6 +19,7 @@ function paramsFromUI() {
     min_thickness_mm: parseFloat(el("minThickness").value),
     max_thickness_mm: parseFloat(el("maxThickness").value),
     detail: parseFloat(el("detail").value),
+    border_mm: parseFloat(el("borderMm").value),
     shape: el("shape").value,
     curve_degrees: parseFloat(el("curveDegrees").value),
     invert: el("invert").checked,
@@ -48,6 +49,7 @@ function updateValLabels() {
   el("minThicknessVal").textContent = parseFloat(el("minThickness").value).toFixed(2) + "mm";
   el("maxThicknessVal").textContent = parseFloat(el("maxThickness").value).toFixed(2) + "mm";
   el("detailVal").textContent = parseFloat(el("detail").value).toFixed(1) + " pts/mm";
+  el("borderMmVal").textContent = el("borderMm").value + "mm";
   el("brightnessVal").textContent = el("brightness").value;
   el("contrastVal").textContent = el("contrast").value;
   el("gammaVal").textContent = parseFloat(el("gamma").value).toFixed(2);
@@ -128,7 +130,7 @@ el("fileInput").addEventListener("change", (e) => {
   img.src = URL.createObjectURL(file);
 });
 
-["widthMm", "heightMm", "invert", "brightness", "contrast", "gamma"].forEach((id) => {
+["widthMm", "heightMm", "borderMm", "invert", "brightness", "contrast", "gamma"].forEach((id) => {
   el(id).addEventListener("input", () => {
     if (id === "widthMm" && el("lockAspect").checked && state.imageAspect) {
       el("heightMm").value = (parseFloat(el("widthMm").value) / state.imageAspect).toFixed(1);
@@ -194,6 +196,10 @@ el("downloadBtn").addEventListener("click", async () => {
   } finally {
     el("downloadBtn").disabled = false;
   }
+});
+
+el("backlightToggle").addEventListener("change", (e) => {
+  setBacklightMode(e.target.checked);
 });
 
 updateValLabels();

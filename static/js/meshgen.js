@@ -14,6 +14,26 @@ function thicknessGrid(heightmap, rows, cols, minT, maxT) {
   return t;
 }
 
+// Approximates how the print looks with a light source behind it: thinner
+// (brighter source pixel) areas pass more light, thicker (darker) areas
+// block it. heightmap is already exactly this "brightness" value pre
+// extrusion, so we reuse it directly rather than deriving it from
+// thickness. The power curve exaggerates the falloff a bit since real
+// transmitted light through plastic drops off faster than linearly with
+// thickness (Beer-Lambert-ish), which reads as more realistic contrast.
+const BACKLIGHT_TINT = [1.0, 0.92, 0.78];
+
+function buildBacklitColors(heightmap, rows, cols) {
+  const colors = new Float32Array(rows * cols * 3);
+  for (let i = 0; i < rows * cols; i++) {
+    const b = Math.pow(Math.max(heightmap[i], 0), 1.6);
+    colors[i * 3] = b * BACKLIGHT_TINT[0];
+    colors[i * 3 + 1] = b * BACKLIGHT_TINT[1];
+    colors[i * 3 + 2] = b * BACKLIGHT_TINT[2];
+  }
+  return colors;
+}
+
 export function buildFlatGeometry(heightmap, rows, cols, widthMm, heightMm, minT, maxT, maskFn) {
   const thickness = thicknessGrid(heightmap, rows, cols, minT, maxT);
   const positions = new Float32Array(rows * cols * 3);
@@ -43,6 +63,7 @@ export function buildFlatGeometry(heightmap, rows, cols, widthMm, heightMm, minT
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(buildBacklitColors(heightmap, rows, cols), 3));
   geo.setIndex(indices);
   geo.computeVertexNormals();
   return geo;
@@ -79,6 +100,7 @@ export function buildCurvedGeometry(heightmap, rows, cols, widthMm, heightMm, mi
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(buildBacklitColors(heightmap, rows, cols), 3));
   geo.setIndex(indices);
   geo.computeVertexNormals();
   return geo;

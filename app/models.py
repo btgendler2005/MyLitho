@@ -14,6 +14,8 @@ class LithophaneParams(BaseModel):
     max_thickness_mm: float = Field(3.0, ge=0.6, le=8)
     detail: float = Field(2.5, ge=0.8, le=6.0, description="points per mm")
 
+    border_mm: float = Field(0.0, ge=0.0, le=60.0)
+
     shape: ShapeType = "flat"
     curve_degrees: float = Field(120.0, ge=10, le=340)
 

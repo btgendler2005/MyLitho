@@ -2,6 +2,24 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 let scene, camera, renderer, controls, meshObj, container;
+let backlightEnabled = false;
+
+const NORMAL_BG = 0x14161a;
+const BACKLIT_BG = 0x000000;
+
+const normalMaterial = () =>
+  new THREE.MeshStandardMaterial({
+    color: 0xf1ead9,
+    roughness: 0.8,
+    metalness: 0.02,
+    side: THREE.DoubleSide,
+  });
+
+const backlitMaterial = () =>
+  new THREE.MeshBasicMaterial({
+    vertexColors: true,
+    side: THREE.DoubleSide,
+  });
 
 export function initViewer(el) {
   container = el;
@@ -51,15 +69,19 @@ export function setPreviewMesh(geometry) {
     meshObj.geometry.dispose();
     meshObj.material.dispose();
   }
-  const material = new THREE.MeshStandardMaterial({
-    color: 0xf1ead9,
-    roughness: 0.8,
-    metalness: 0.02,
-    side: THREE.DoubleSide,
-  });
+  const material = backlightEnabled ? backlitMaterial() : normalMaterial();
   meshObj = new THREE.Mesh(geometry, material);
   scene.add(meshObj);
   frameCamera(geometry);
+}
+
+export function setBacklightMode(enabled) {
+  backlightEnabled = enabled;
+  scene.background = new THREE.Color(enabled ? BACKLIT_BG : NORMAL_BG);
+  if (meshObj) {
+    meshObj.material.dispose();
+    meshObj.material = enabled ? backlitMaterial() : normalMaterial();
+  }
 }
 
 function frameCamera(geometry) {

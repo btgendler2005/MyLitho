@@ -64,3 +64,31 @@ def target_grid_size(
         cols = max(8, round(cols * scale))
         rows = max(8, round(rows * scale))
     return cols, rows
+
+
+def apply_border(
+    heightmap: np.ndarray, width_mm: float, height_mm: float, border_mm: float
+) -> tuple[np.ndarray, float, float]:
+    """Pad a heightmap with a flat, fully-dark border ring.
+
+    A pixel value of 0.0 maps (via shapes.thickness_grid) to max thickness,
+    so the padded border comes out as a solid, uniform-height mat around
+    the image -- reusing the existing thickness formula rather than
+    threading a separate "border thickness" concept through the mesh code.
+    """
+    if border_mm <= 0:
+        return heightmap, width_mm, height_mm
+
+    rows, cols = heightmap.shape
+    border_px_x = max(1, round(border_mm * (cols / width_mm)))
+    border_px_y = max(1, round(border_mm * (rows / height_mm)))
+
+    padded = np.pad(
+        heightmap,
+        ((border_px_y, border_px_y), (border_px_x, border_px_x)),
+        mode="constant",
+        constant_values=0.0,
+    )
+    new_width_mm = width_mm + 2 * border_mm
+    new_height_mm = height_mm + 2 * border_mm
+    return padded, new_width_mm, new_height_mm

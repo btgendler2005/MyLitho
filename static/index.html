@@ -42,6 +42,11 @@
     </div>
 
     <div class="field">
+      <label for="borderMm">Border / mat: <span class="val" id="borderMmVal">0mm</span></label>
+      <input type="range" id="borderMm" min="0" max="40" value="0" step="1" />
+    </div>
+
+    <div class="field">
       <label for="shape">Shape</label>
       <select id="shape">
         <option value="flat">Flat panel</option>
@@ -129,6 +134,10 @@
   </section>
 
   <section class="panel viewer-panel">
+    <div class="viewer-toolbar">
+      <label><input type="checkbox" id="backlightToggle" /> Simulate backlight</label>
+      <span class="viewer-toolbar-hint">Approximates how the print glows with a light behind it — thin/bright areas glow, thick/dark areas block light.</span>
+    </div>
     <div id="viewer"></div>
     <p class="viewer-hint">Drag to orbit &middot; scroll to zoom &middot; preview mesh is lower detail than the exported STL</p>
   </section>
