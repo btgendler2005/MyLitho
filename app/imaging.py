@@ -66,6 +66,51 @@ def target_grid_size(
     return cols, rows
 
 
+def _capped_display_size(width_mm: float, height_mm: float, max_px: int) -> tuple[int, int]:
+    aspect = width_mm / height_mm
+    if aspect >= 1:
+        w, h = max_px, round(max_px / aspect)
+    else:
+        w, h = round(max_px * aspect), max_px
+    return max(8, w), max(8, h)
+
+
+def build_backlight_texture(
+    img: Image.Image,
+    width_mm: float,
+    height_mm: float,
+    border_mm: float,
+    invert: bool,
+    brightness: float,
+    contrast: float,
+    gamma: float,
+    max_px: int = 900,
+) -> bytes:
+    """Render a display-resolution grayscale PNG approximating backlit
+    brightness, independent of the mesh's point count.
+
+    The live 3D preview's mesh resolution is capped for browser
+    performance, and coloring the mesh per-vertex would blur the backlit
+    preview across each (large, sparse) triangle. Rendering this as a
+    separate higher-resolution texture -- sampled per-pixel by the GPU
+    instead of interpolated per-vertex -- keeps the backlit preview sharp
+    regardless of the print mesh's resolution.
+    """
+    cols, rows = _capped_display_size(width_mm, height_mm, max_px)
+    heightmap = image_to_heightmap(img, cols, rows, invert, brightness, contrast, gamma)
+    heightmap, _, _ = apply_border(heightmap, width_mm, height_mm, border_mm)
+
+    # Same falloff curve the old per-vertex approach used: transmitted
+    # light through plastic drops off faster than linearly with thickness.
+    brightness_curve = np.power(np.clip(heightmap, 0.0, 1.0), 1.6)
+    pixels = (brightness_curve * 255).astype(np.uint8)
+
+    out_img = Image.fromarray(pixels, mode="L")
+    buf = io.BytesIO()
+    out_img.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+
 def apply_border(
     heightmap: np.ndarray, width_mm: float, height_mm: float, border_mm: float
 ) -> tuple[np.ndarray, float, float]:

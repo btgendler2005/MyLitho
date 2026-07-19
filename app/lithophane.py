@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+
 import trimesh
 
 from . import accessories, geometry, imaging, shapes
@@ -35,12 +37,25 @@ def build_preview_heightmap(image_bytes: bytes, params: LithophaneParams) -> dic
     )
     heightmap, width_mm, height_mm = imaging.apply_border(heightmap, params.width_mm, params.height_mm, params.border_mm)
     rows, cols = heightmap.shape
+
+    texture_png = imaging.build_backlight_texture(
+        img,
+        params.width_mm,
+        params.height_mm,
+        params.border_mm,
+        params.invert,
+        params.brightness,
+        params.contrast,
+        params.gamma,
+    )
+
     return {
         "cols": cols,
         "rows": rows,
         "heightmap": heightmap.flatten().tolist(),
         "width_mm": width_mm,
         "height_mm": height_mm,
+        "texture_png_base64": base64.b64encode(texture_png).decode("ascii"),
     }
 
 

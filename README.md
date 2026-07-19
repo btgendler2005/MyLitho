@@ -82,6 +82,9 @@ Then open http://127.0.0.1:8420 in your browser.
    of how the print glows with a light behind it — this is the best way to
    catch contrast problems (too washed out, or too dark/muddy) before you
    commit to printing. It's preview-only; it doesn't affect the export.
+   This view is rendered from a separate, higher-resolution image sent
+   just for display, so it stays sharp even on small panels or low Detail
+   settings where the print mesh itself is coarse.
 8. Optionally enable the backlight box and/or snap-on frame (flat shape
    only). These export as their own STL files, sized to fit the panel
    (border included) with a small tolerance.
@@ -105,7 +108,12 @@ together.
 ## How it works
 
 - `app/imaging.py` — resamples the photo to a heightmap grid, with
-  brightness/contrast/gamma/invert applied server-side.
+  brightness/contrast/gamma/invert applied server-side. Also renders a
+  separate, higher-resolution grayscale PNG (`build_backlight_texture`)
+  used only for the Simulate Backlight preview — it's sampled per-pixel
+  by the GPU as a texture rather than interpolated per-vertex like the
+  mesh's own geometry, so the backlit preview doesn't inherit the print
+  mesh's (deliberately capped) resolution.
 - `app/shapes.py` — converts the heightmap into vertex grids for flat and
   curved panels, and clips novelty shapes (circle/heart) via a boolean
   intersection with an extruded polygon.

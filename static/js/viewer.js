@@ -3,9 +3,13 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 let scene, camera, renderer, controls, meshObj, container;
 let backlightEnabled = false;
+let backlightTexture = null;
 
 const NORMAL_BG = 0x14161a;
 const BACKLIT_BG = 0x000000;
+// Warm-white LED tint, multiplied against the grayscale texture by the
+// material's default (color * map) blending.
+const BACKLIGHT_TINT = 0xffeac7;
 
 const normalMaterial = () =>
   new THREE.MeshStandardMaterial({
@@ -17,7 +21,8 @@ const normalMaterial = () =>
 
 const backlitMaterial = () =>
   new THREE.MeshBasicMaterial({
-    vertexColors: true,
+    map: backlightTexture,
+    color: BACKLIGHT_TINT,
     side: THREE.DoubleSide,
   });
 
@@ -81,6 +86,23 @@ export function setBacklightMode(enabled) {
   if (meshObj) {
     meshObj.material.dispose();
     meshObj.material = enabled ? backlitMaterial() : normalMaterial();
+  }
+}
+
+const textureLoader = new THREE.TextureLoader();
+
+export function loadBacklightTextureFromBase64(base64Png) {
+  textureLoader.load(`data:image/png;base64,${base64Png}`, (texture) => {
+    setBacklightTexture(texture);
+  });
+}
+
+export function setBacklightTexture(texture) {
+  if (backlightTexture) backlightTexture.dispose();
+  backlightTexture = texture;
+  if (meshObj && backlightEnabled) {
+    meshObj.material.dispose();
+    meshObj.material = backlitMaterial();
   }
 }
 

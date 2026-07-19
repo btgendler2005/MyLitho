@@ -1,4 +1,4 @@
-import { initViewer, setPreviewMesh, setBacklightMode } from "./viewer.js";
+import { initViewer, setPreviewMesh, setBacklightMode, loadBacklightTextureFromBase64 } from "./viewer.js";
 import { buildFlatGeometry, buildCurvedGeometry, circleMask, heartMask } from "./meshgen.js";
 
 const el = (id) => document.getElementById(id);
@@ -85,6 +85,9 @@ async function fetchPreview() {
     }
     state.previewData = await res.json();
     rebuildGeometry();
+    if (state.previewData.texture_png_base64) {
+      loadBacklightTextureFromBase64(state.previewData.texture_png_base64);
+    }
     setStatus("");
     el("downloadBtn").disabled = false;
   } catch (e) {

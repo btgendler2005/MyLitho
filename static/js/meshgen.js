@@ -14,24 +14,22 @@ function thicknessGrid(heightmap, rows, cols, minT, maxT) {
   return t;
 }
 
-// Approximates how the print looks with a light source behind it: thinner
-// (brighter source pixel) areas pass more light, thicker (darker) areas
-// block it. heightmap is already exactly this "brightness" value pre
-// extrusion, so we reuse it directly rather than deriving it from
-// thickness. The power curve exaggerates the falloff a bit since real
-// transmitted light through plastic drops off faster than linearly with
-// thickness (Beer-Lambert-ish), which reads as more realistic contrast.
-const BACKLIGHT_TINT = [1.0, 0.92, 0.78];
-
-function buildBacklitColors(heightmap, rows, cols) {
-  const colors = new Float32Array(rows * cols * 3);
-  for (let i = 0; i < rows * cols; i++) {
-    const b = Math.pow(Math.max(heightmap[i], 0), 1.6);
-    colors[i * 3] = b * BACKLIGHT_TINT[0];
-    colors[i * 3 + 1] = b * BACKLIGHT_TINT[1];
-    colors[i * 3 + 2] = b * BACKLIGHT_TINT[2];
+// UV coordinates for the backlit texture (see app.js/viewer.js). Sampled
+// per-fragment by the GPU from a server-rendered texture that's much
+// higher resolution than the print mesh, instead of being interpolated
+// per-vertex -- that's what keeps the backlit preview sharp even when the
+// mesh itself is coarse (small panel, low Detail setting, etc).
+function buildUVs(rows, cols) {
+  const uvs = new Float32Array(rows * cols * 2);
+  for (let r = 0; r < rows; r++) {
+    const v = 1 - r / (rows - 1);
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      uvs[i * 2] = c / (cols - 1);
+      uvs[i * 2 + 1] = v;
+    }
   }
-  return colors;
+  return uvs;
 }
 
 export function buildFlatGeometry(heightmap, rows, cols, widthMm, heightMm, minT, maxT, maskFn) {
@@ -63,7 +61,7 @@ export function buildFlatGeometry(heightmap, rows, cols, widthMm, heightMm, minT
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute("color", new THREE.BufferAttribute(buildBacklitColors(heightmap, rows, cols), 3));
+  geo.setAttribute("uv", new THREE.BufferAttribute(buildUVs(rows, cols), 2));
   geo.setIndex(indices);
   geo.computeVertexNormals();
   return geo;
@@ -100,7 +98,7 @@ export function buildCurvedGeometry(heightmap, rows, cols, widthMm, heightMm, mi
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute("color", new THREE.BufferAttribute(buildBacklitColors(heightmap, rows, cols), 3));
+  geo.setAttribute("uv", new THREE.BufferAttribute(buildUVs(rows, cols), 2));
   geo.setIndex(indices);
   geo.computeVertexNormals();
   return geo;
