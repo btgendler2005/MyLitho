@@ -203,7 +203,9 @@ to stand upright to wrap around a cylinder.
   the opening. Both are open at the top, so the panel slides straight
   down into the back pocket; once seated it can't tip forward out of the
   box because it's wider than the lip opening, and gravity plus the solid
-  floor hold it on the other three sides — no glue required.
+  floor hold it on the other three sides — no glue required. The cord
+  slot cuts through the back wall (not the bottom), so the box still
+  sits flat on a table.
 - `static/` — the frontend. `meshgen.js` mirrors the flat/curved position
   math from `shapes.py` in JavaScript so the live preview can rebuild
   instantly on the client without a round trip for every slider tweak;

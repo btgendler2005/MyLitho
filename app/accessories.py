@@ -69,8 +69,11 @@ def build_backlight_box(
     front_opening.apply_translation([wall_mm + lip_mm, wall_mm + lip_mm, lip_z0])
     result = trimesh.boolean.difference([result, front_opening], engine="manifold")
 
-    slot = _box_at_origin(slot_w_mm, wall_mm + 2, slot_h_mm)
-    slot.apply_translation([outer_w / 2 - slot_w_mm / 2, -1.0, wall_mm])
+    # Cord slot cuts through the back wall (not the bottom) so the box can
+    # still sit flat on a table -- the wire runs along the cavity floor
+    # and exits right where the floor meets the back wall.
+    slot = _box_at_origin(slot_w_mm, slot_h_mm, wall_mm + 2)
+    slot.apply_translation([outer_w / 2 - slot_w_mm / 2, wall_mm, -1.0])
     result = trimesh.boolean.difference([result, slot], engine="manifold")
 
     if result is None or result.is_empty:
