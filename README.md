@@ -74,29 +74,29 @@ Then open http://127.0.0.1:8420 in your browser.
    1.0x zoom you get a "cover" fit — the largest region of the photo that
    matches your panel's aspect ratio, with nothing squashed or distorted.
    Click **Reset** to go back to that default framing.
-6. Pick a shape. Curved wrap needs a curve angle (degrees the panel bends
+5. Pick a shape. Curved wrap needs a curve angle (degrees the panel bends
    through); circle/heart clip the panel (and its border) to that outline.
-7. Dial in min/max thickness. Min thickness is the brightest/thinnest area
+6. Dial in min/max thickness. Min thickness is the brightest/thinnest area
    (lets the most light through); max thickness is the darkest/thickest
    area — the border is solid at max thickness. A good starting point for
    FDM printing is 0.8mm min / 3.0mm max with a 0.4mm nozzle — thinner min
    than your nozzle can reliably extrude will look inconsistent.
-8. Bump the **Detail** slider for finer surface resolution on close-up or
+7. Bump the **Detail** slider for finer surface resolution on close-up or
    high-contrast photos — this also sharpens the live preview, not just
    the export. Higher detail means a heavier mesh and slower export
    (boolean-based shapes — circle, heart, the frame, the box — take longer
    at high detail).
-9. Toggle **Simulate backlight** above the viewer to see an approximation
+8. Toggle **Simulate backlight** above the viewer to see an approximation
    of how the print glows with a light behind it — this is the best way to
    catch contrast problems (too washed out, or too dark/muddy) before you
    commit to printing. It's preview-only; it doesn't affect the export.
    This view is rendered from a separate, higher-resolution image sent
    just for display, so it stays sharp even on small panels or low Detail
    settings where the print mesh itself is coarse.
-10. Optionally enable the backlight box and/or snap-on frame (flat shape
-    only). These export as their own STL files, sized to fit the panel
-    (border included) with a small tolerance.
-11. Click **Download STL**. A single shape downloads as a `.stl`; if you've
+9. Optionally enable the backlight box and/or snap-on frame (flat shape
+   only). These export as their own STL files, sized to fit the panel
+   (border included) with a small tolerance.
+10. Click **Download STL**. A single shape downloads as a `.stl`; if you've
     enabled the box or frame it downloads as a `.zip` with all the parts.
 
 The in-browser preview matches the exported file's resolution almost
@@ -112,6 +112,61 @@ can actually look *finer* than the final file. If you want to sanity-check
 resolution for your own settings: preview and export both derive from the
 same `width_mm/height_mm x Detail`, so bumping Detail sharpens both
 together.
+
+## Print settings
+
+The STL this app produces is only half the story — a perfect mesh sliced
+with defaults (0.2mm layers, low infill) will still come out banded and
+inconsistent. These settings are synthesized from itslitho's own
+[slicer settings guide](https://itslitho.com/itslitho-blog/slicer-settings-for-lithophanes-tweaking-to-perfection/)
+and several other lithophane-specific guides, cross-checked against each
+other:
+
+| Setting | Value | Why |
+|---|---|---|
+| Layer height | 0.12mm (0.08–0.12mm) | The single biggest factor. At 0.2mm, gradients visibly band; at 0.12mm they smooth out. Below ~0.08mm adds print time without a visible gain. |
+| Infill | 100% | A lithophane's whole trick is controlling how much light gets through solid material — any void shows up as an odd bright/dark patch. (Alternative: 6–7+ perimeter walls with lower infill gives similar results with less filament, if your slicer version handles it well.) |
+| Print speed | 30–50mm/s | Slower is smoother; speed shows up directly as ripple on a backlit print. |
+| Filament | White or natural PLA | Best, most even light transmission. Colored/dark filaments block more light and need a re-tuned thickness range. |
+| Cooling | 100% after layer 1–2 | No overhangs to fight here, so full cooling is safe and helps fine detail hold its shape. |
+| Brim | 5–8mm | Cheap insurance against warping/lifting on a print that's mostly one big flat-ish shape. |
+
+(We looked at auto-embedding these into a 3MF project file for one-click
+setup in Creality Print/OrcaSlicer, but the settings didn't come through
+reliably on an actual test — that side-channel is undocumented and
+slicer-version-dependent, so it's not worth the false confidence. Enter
+these by hand; it only takes a minute.)
+
+### Advanced: vertical orientation for extra-smooth gradients
+
+Standing a flat panel on edge (image facing forward) instead of printing
+it flat moves the thickness gradient from Z-axis layer stacking to X-Y
+toolpath positioning, which is far more precise — this all but eliminates
+banding on gradual tones, and is why ItsLitho itself recommends it for
+maximum quality.
+
+The tradeoff is print time: layer count now scales with the panel's
+*height* instead of its *thickness*. A 100mm-tall panel that prints in
+roughly 30 minutes flat (25 layers at 3mm ÷ 0.12mm) can take 6+ hours
+standing up (830 layers at 100mm ÷ 0.12mm). For a shop optimizing for
+turnaround, flat is almost always the right default — this is worth
+reaching for on a hero piece, not routine orders.
+
+To do it: import the STL into your slicer, rotate it 90° so it stands on
+one edge with the image facing you, and add a brim — the tall, thin
+footprint is more prone to toppling or warping than printing flat. Curved
+wrap lithophanes already get this benefit automatically, since they have
+to stand upright to wrap around a cylinder.
+
+### Preparing your photo
+
+- High contrast and a clean, distinct subject read best — very flat/washed
+  out photos benefit from the Contrast slider or a quick edit beforehand.
+- Sharp focus matters more than resolution — a soft or blurry source photo
+  stays soft no matter how high you push the Detail slider.
+- Use the crop tool to fill the frame with your subject rather than
+  leaving a lot of empty background — background detail mostly wastes the
+  panel's dynamic range.
 
 ## How it works
 
@@ -150,10 +205,9 @@ together.
   pixels before meshing (`imaging.apply_border`) — since a 0.0 pixel maps
   to max thickness under the existing thickness formula, this reuses all
   the normal mesh-building and shape-masking code with no special case.
-- The **backlight preview** colors each preview vertex directly from its
-  heightmap value (the same brightness value used to compute thickness) so
-  thin/bright areas glow and thick/dark areas stay dark, rendered with an
-  unlit vertex-colored material on a black background.
+- The **backlight preview** renders a separate server-side texture (see
+  `build_backlight_texture` above) with an unlit material on a black
+  background, so thin/bright areas glow and thick/dark areas stay dark.
 
 ## Notes for production use
 
