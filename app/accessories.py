@@ -29,16 +29,17 @@ def build_backlight_box(
     slot_w_mm: float = 10.0,
     slot_h_mm: float = 5.0,
 ) -> trimesh.Trimesh:
-    """A backlight box the panel slides into from the open top and stays
-    in under its own weight -- no glue needed.
+    """A backlight box with a fully closed top and bottom; the panel
+    slides in from the open left edge instead.
 
-    The interior is two stages front-to-back: a full-width "back pocket"
+    The interior is two stages front-to-back: a full-height "back pocket"
     (LED cavity + most of the panel's depth) and a narrower "front lip"
-    near the opening. Both are open at the top so the panel drops straight
-    down into the back pocket; once seated it can't tip forward out of the
-    box because it's wider than the lip opening, and the solid floor plus
-    left/right lip strips (running the full height) hold it on the other
-    three sides.
+    near the opening. Both are open on the left so the panel can slide in
+    horizontally; once seated it can't tip forward out of the box because
+    it's taller than the lip opening. Unlike a top-loading design, gravity
+    doesn't help hold it in on the open side -- retention there is a snug
+    friction fit, so keep tolerance_mm modest (the default trades a little
+    ease-of-insertion for a more secure hold).
     """
     lip_depth = min(2.0, depth_mm * 0.3)
     pocket_depth = max(depth_mm - lip_depth, 3.0)
@@ -49,29 +50,31 @@ def build_backlight_box(
 
     outer = _box_at_origin(outer_w, outer_h, total_depth)
 
-    # Back pocket: open at the top (extends past outer_h) so the panel can
-    # slide down into it; a little wider than the panel so it isn't a
-    # zero-clearance fit; stops just short of the lip band (tiny overlap
-    # for a clean seam) so that band is left solid.
+    # Back pocket: open on the left (extends past x=0) so the panel can
+    # slide in from that side; a little taller than the panel so it isn't
+    # a zero-clearance fit; stops just short of the lip band (tiny overlap
+    # for a clean seam) so that band is left solid. The right, top, and
+    # bottom walls stay fully closed.
     pocket_z0 = wall_mm - _EPS
     pocket_z1 = wall_mm + pocket_depth + _EPS
-    back_pocket = _box_at_origin(width_mm + tolerance_mm, outer_h, pocket_z1 - pocket_z0)
-    back_pocket.apply_translation([wall_mm - tolerance_mm / 2, wall_mm, pocket_z0])
+    pocket_right = wall_mm + width_mm + tolerance_mm / 2
+    back_pocket = _box_at_origin(outer_w, height_mm + tolerance_mm, pocket_z1 - pocket_z0)
+    back_pocket.apply_translation([pocket_right - outer_w, wall_mm - tolerance_mm / 2, pocket_z0])
     result = trimesh.boolean.difference([outer, back_pocket], engine="manifold")
 
-    # Front lip: narrower opening (by lip_mm on each side) so the panel's
-    # face catches on the resulting ledge instead of falling out the
-    # front. Also open at the top -- that's the slide-in slot -- so this
-    # only narrows the left/right sides, not the bottom.
+    # Front lip: narrower opening (by lip_mm on the top and bottom) so the
+    # panel's face catches on the resulting ledge instead of falling out
+    # the front. Also open on the left -- that's the slide-in side.
     lip_z0 = wall_mm + pocket_depth - _EPS
     lip_z1 = total_depth + _EPS
-    front_opening = _box_at_origin(width_mm - 2 * lip_mm, outer_h, lip_z1 - lip_z0)
-    front_opening.apply_translation([wall_mm + lip_mm, wall_mm + lip_mm, lip_z0])
+    lip_right = wall_mm + width_mm - lip_mm
+    front_opening = _box_at_origin(outer_w, height_mm - 2 * lip_mm, lip_z1 - lip_z0)
+    front_opening.apply_translation([lip_right - outer_w, wall_mm + lip_mm, lip_z0])
     result = trimesh.boolean.difference([result, front_opening], engine="manifold")
 
-    # Cord slot cuts through the back wall (not the bottom) so the box can
-    # still sit flat on a table -- the wire runs along the cavity floor
-    # and exits right where the floor meets the back wall.
+    # Cord slot cuts through the back wall, low and centered, so the wire
+    # runs along the cavity floor and out the back -- doesn't interfere
+    # with the box sitting flat or with the side-loading opening.
     slot = _box_at_origin(slot_w_mm, slot_h_mm, wall_mm + 2)
     slot.apply_translation([outer_w / 2 - slot_w_mm / 2, wall_mm, -1.0])
     result = trimesh.boolean.difference([result, slot], engine="manifold")

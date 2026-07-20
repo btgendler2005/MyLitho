@@ -24,8 +24,9 @@ limits.
   panel, like a picture-frame mat, in any shape
 - **Optional hanging hole** for ornaments
 - **Optional companion parts**, exported as separate STL files sized to fit
-  the panel (border included): an LED backlight box (slide-in from the top,
-  retained by a lip — no glue needed) and a snap-on frame (rabbeted so the
+  the panel (border included): an LED backlight box (fully closed top and
+  bottom; slides in from the side, retained by a lip — no glue needed) and
+  a snap-on frame (rabbeted so the
   panel friction-fits into it)
 - Adjustable size, min/max thickness, mesh detail/resolution, brightness,
   contrast, gamma, and invert
@@ -198,12 +199,14 @@ to stand upright to wrap around a cylinder.
 - `app/accessories.py` — parametric backlight box and snap-on frame, built
   from primitive boxes combined with boolean operations
   ([trimesh](https://trimesh.org/), [manifold3d](https://github.com/elalish/manifold) engine).
-  The box's interior is two stages front-to-back: a full-width back pocket
-  for the LEDs and the bulk of the panel, and a narrower front lip near
-  the opening. Both are open at the top, so the panel slides straight
-  down into the back pocket; once seated it can't tip forward out of the
-  box because it's wider than the lip opening, and gravity plus the solid
-  floor hold it on the other three sides — no glue required. The cord
+  The top and bottom are fully closed; the box's interior is two stages
+  front-to-back instead: a full-height back pocket for the LEDs and the
+  bulk of the panel, and a narrower front lip near the opening. Both are
+  open on the left, so the panel slides in horizontally; once seated it
+  can't tip forward out of the box because it's taller than the lip
+  opening. Since the top/bottom being closed means gravity doesn't help
+  retain it on the open side (unlike a top-loading design), this relies
+  on a snug friction fit instead — keep `tolerance_mm` modest. The cord
   slot cuts through the back wall (not the bottom), so the box still
   sits flat on a table.
 - `static/` — the frontend. `meshgen.js` mirrors the flat/curved position
