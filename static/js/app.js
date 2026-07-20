@@ -38,7 +38,8 @@ function paramsFromUI() {
     add_backlight_box: el("addBox").checked,
     box_wall_mm: parseFloat(el("boxWall").value),
     box_depth_mm: parseFloat(el("boxDepth").value),
-    box_tolerance_mm: 0.3,
+    box_lip_mm: parseFloat(el("boxLip").value),
+    box_tolerance_mm: 0.4,
     add_frame: el("addFrame").checked,
     frame_border_mm: parseFloat(el("frameBorder").value),
     frame_depth_mm: parseFloat(el("frameDepth").value),
@@ -74,7 +75,9 @@ function toggleConditionalFields() {
     el("addBox").checked = false;
     el("addFrame").checked = false;
   }
-  el("boxOptions").hidden = !(el("addBox").checked && flatShape);
+  const showBox = el("addBox").checked && flatShape;
+  el("boxOptions").hidden = !showBox;
+  el("boxHint").hidden = !showBox;
   el("frameOptions").hidden = !(el("addFrame").checked && flatShape);
 }
 
@@ -189,6 +192,7 @@ el("cropResetBtn").addEventListener("click", () => {
   "addFrame",
   "boxWall",
   "boxDepth",
+  "boxLip",
   "frameBorder",
   "frameDepth",
 ].forEach((id) => {

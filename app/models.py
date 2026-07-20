@@ -33,7 +33,8 @@ class LithophaneParams(BaseModel):
     add_backlight_box: bool = False
     box_wall_mm: float = Field(2.0, ge=0.8, le=6)
     box_depth_mm: float = Field(20.0, ge=5, le=80)
-    box_tolerance_mm: float = Field(0.3, ge=0.0, le=2)
+    box_lip_mm: float = Field(2.5, ge=1.0, le=8.0)
+    box_tolerance_mm: float = Field(0.4, ge=0.0, le=2)
 
     add_frame: bool = False
     frame_border_mm: float = Field(8.0, ge=2, le=40)

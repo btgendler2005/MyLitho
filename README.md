@@ -24,8 +24,9 @@ limits.
   panel, like a picture-frame mat, in any shape
 - **Optional hanging hole** for ornaments
 - **Optional companion parts**, exported as separate STL files sized to fit
-  the panel (border included): an LED backlight box (with a cord slot) and
-  a snap-on frame (rabbeted so the panel friction-fits into it)
+  the panel (border included): an LED backlight box (slide-in from the top,
+  retained by a lip — no glue needed) and a snap-on frame (rabbeted so the
+  panel friction-fits into it)
 - Adjustable size, min/max thickness, mesh detail/resolution, brightness,
   contrast, gamma, and invert
 - Output is a watertight, manifold mesh ready to slice directly — no repair
@@ -95,7 +96,9 @@ Then open http://127.0.0.1:8420 in your browser.
    settings where the print mesh itself is coarse.
 9. Optionally enable the backlight box and/or snap-on frame (flat shape
    only). These export as their own STL files, sized to fit the panel
-   (border included) with a small tolerance.
+   (border included) with a small tolerance. The box's **Lip** setting
+   controls how much of the panel's edge the retaining lip covers —
+   bigger holds it more securely, smaller shows more of the image.
 10. Click **Download STL**. A single shape downloads as a `.stl`; if you've
     enabled the box or frame it downloads as a `.zip` with all the parts.
 
@@ -195,6 +198,12 @@ to stand upright to wrap around a cylinder.
 - `app/accessories.py` — parametric backlight box and snap-on frame, built
   from primitive boxes combined with boolean operations
   ([trimesh](https://trimesh.org/), [manifold3d](https://github.com/elalish/manifold) engine).
+  The box's interior is two stages front-to-back: a full-width back pocket
+  for the LEDs and the bulk of the panel, and a narrower front lip near
+  the opening. Both are open at the top, so the panel slides straight
+  down into the back pocket; once seated it can't tip forward out of the
+  box because it's wider than the lip opening, and gravity plus the solid
+  floor hold it on the other three sides — no glue required.
 - `static/` — the frontend. `meshgen.js` mirrors the flat/curved position
   math from `shapes.py` in JavaScript so the live preview can rebuild
   instantly on the client without a round trip for every slider tweak;
