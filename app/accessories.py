@@ -19,6 +19,14 @@ def _box_at_origin(sx: float, sy: float, sz: float) -> trimesh.Trimesh:
 _EPS = 0.05  # tiny overlap at internal seams so boolean ops don't leave a knife-edge coincident face
 
 
+def _box_depth_stages(depth_mm: float) -> tuple[float, float]:
+    """Shared front-to-back split used by both the box and its cap, so the
+    cap's plug always matches the box's actual opening shape."""
+    lip_depth = min(2.0, depth_mm * 0.3)
+    pocket_depth = max(depth_mm - lip_depth, 3.0)
+    return lip_depth, pocket_depth
+
+
 def build_backlight_box(
     width_mm: float,
     height_mm: float,
@@ -29,20 +37,19 @@ def build_backlight_box(
     slot_w_mm: float = 10.0,
     slot_h_mm: float = 5.0,
 ) -> trimesh.Trimesh:
-    """A backlight box with a fully closed top and bottom; the panel
-    slides in from the open left edge instead.
+    """A backlight box the panel slides into from the open top and stays
+    in under its own weight -- no glue needed. Left, right, and bottom are
+    fully closed; pair this with build_backlight_box_cap() to close the
+    top too, after the panel is loaded.
 
-    The interior is two stages front-to-back: a full-height "back pocket"
+    The interior is two stages front-to-back: a full-width "back pocket"
     (LED cavity + most of the panel's depth) and a narrower "front lip"
-    near the opening. Both are open on the left so the panel can slide in
-    horizontally; once seated it can't tip forward out of the box because
-    it's taller than the lip opening. Unlike a top-loading design, gravity
-    doesn't help hold it in on the open side -- retention there is a snug
-    friction fit, so keep tolerance_mm modest (the default trades a little
-    ease-of-insertion for a more secure hold).
+    near the opening. Both are open at the top so the panel drops straight
+    down into the back pocket; once seated it can't tip forward out of the
+    box because it's wider than the lip opening, and the solid floor plus
+    left/right/bottom lip strips hold it on the other three sides.
     """
-    lip_depth = min(2.0, depth_mm * 0.3)
-    pocket_depth = max(depth_mm - lip_depth, 3.0)
+    lip_depth, pocket_depth = _box_depth_stages(depth_mm)
 
     outer_w = width_mm + 2 * wall_mm
     outer_h = height_mm + 2 * wall_mm
@@ -50,31 +57,29 @@ def build_backlight_box(
 
     outer = _box_at_origin(outer_w, outer_h, total_depth)
 
-    # Back pocket: open on the left (extends past x=0) so the panel can
-    # slide in from that side; a little taller than the panel so it isn't
-    # a zero-clearance fit; stops just short of the lip band (tiny overlap
-    # for a clean seam) so that band is left solid. The right, top, and
-    # bottom walls stay fully closed.
+    # Back pocket: open at the top (extends past outer_h) so the panel can
+    # slide down into it; a little wider than the panel so it isn't a
+    # zero-clearance fit; stops just short of the lip band (tiny overlap
+    # for a clean seam) so that band is left solid.
     pocket_z0 = wall_mm - _EPS
     pocket_z1 = wall_mm + pocket_depth + _EPS
-    pocket_right = wall_mm + width_mm + tolerance_mm / 2
-    back_pocket = _box_at_origin(outer_w, height_mm + tolerance_mm, pocket_z1 - pocket_z0)
-    back_pocket.apply_translation([pocket_right - outer_w, wall_mm - tolerance_mm / 2, pocket_z0])
+    back_pocket = _box_at_origin(width_mm + tolerance_mm, outer_h, pocket_z1 - pocket_z0)
+    back_pocket.apply_translation([wall_mm - tolerance_mm / 2, wall_mm, pocket_z0])
     result = trimesh.boolean.difference([outer, back_pocket], engine="manifold")
 
-    # Front lip: narrower opening (by lip_mm on the top and bottom) so the
-    # panel's face catches on the resulting ledge instead of falling out
-    # the front. Also open on the left -- that's the slide-in side.
+    # Front lip: narrower opening (by lip_mm on each side, plus a solid
+    # band along the bottom) so the panel's face catches on the resulting
+    # ledge instead of falling out the front. Also open at the top -- the
+    # slide-in slot -- so the top itself has no lip material.
     lip_z0 = wall_mm + pocket_depth - _EPS
     lip_z1 = total_depth + _EPS
-    lip_right = wall_mm + width_mm - lip_mm
-    front_opening = _box_at_origin(outer_w, height_mm - 2 * lip_mm, lip_z1 - lip_z0)
-    front_opening.apply_translation([lip_right - outer_w, wall_mm + lip_mm, lip_z0])
+    front_opening = _box_at_origin(width_mm - 2 * lip_mm, outer_h, lip_z1 - lip_z0)
+    front_opening.apply_translation([wall_mm + lip_mm, wall_mm + lip_mm, lip_z0])
     result = trimesh.boolean.difference([result, front_opening], engine="manifold")
 
-    # Cord slot cuts through the back wall, low and centered, so the wire
-    # runs along the cavity floor and out the back -- doesn't interfere
-    # with the box sitting flat or with the side-loading opening.
+    # Cord slot cuts through the back wall (not the bottom) so the box can
+    # still sit flat on a table -- the wire runs along the cavity floor
+    # and exits right where the floor meets the back wall.
     slot = _box_at_origin(slot_w_mm, slot_h_mm, wall_mm + 2)
     slot.apply_translation([outer_w / 2 - slot_w_mm / 2, wall_mm, -1.0])
     result = trimesh.boolean.difference([result, slot], engine="manifold")
@@ -82,6 +87,55 @@ def build_backlight_box(
     if result is None or result.is_empty:
         raise ValueError("Backlight box boolean ops produced no geometry")
     return result
+
+
+def build_backlight_box_cap(
+    width_mm: float,
+    height_mm: float,
+    wall_mm: float,
+    depth_mm: float,
+    lip_mm: float = 2.5,
+    tolerance_mm: float = 0.4,
+    flange_thickness: float = 1.5,
+    tongue_depth: float = 3.0,
+    clearance: float = 0.3,
+    overhang_mm: float = 2.0,
+) -> trimesh.Trimesh:
+    """A cap that plugs the top opening of build_backlight_box() after the
+    panel is loaded -- load the panel first (it drops straight down and
+    seats itself under its own weight), then press this in from above.
+
+    Shaped like a lid: a flat flange that rests on top of the box's walls
+    (slightly overhanging them for an easy grip), plus a "tongue" on its
+    underside shaped to match the box's own two-stage opening (wider back
+    pocket, narrower front lip) that presses down into the gap for
+    alignment and friction -- it's a snug press-fit, not glued.
+    """
+    lip_depth, pocket_depth = _box_depth_stages(depth_mm)
+
+    outer_w = width_mm + 2 * wall_mm
+    outer_h = height_mm + 2 * wall_mm
+    total_depth = wall_mm + pocket_depth + lip_depth
+
+    flange = _box_at_origin(outer_w + 2 * overhang_mm, flange_thickness, total_depth + 2 * overhang_mm)
+    flange.apply_translation([-overhang_mm, outer_h, -overhang_mm])
+
+    pocket_w = width_mm + tolerance_mm - clearance
+    pocket_tongue = _box_at_origin(pocket_w, tongue_depth + _EPS, pocket_depth - clearance)
+    pocket_tongue.apply_translation(
+        [wall_mm - tolerance_mm / 2 + clearance / 2, outer_h - tongue_depth, wall_mm + clearance / 2]
+    )
+
+    lip_w = width_mm - 2 * lip_mm - clearance
+    lip_tongue = _box_at_origin(lip_w, tongue_depth + _EPS, lip_depth - clearance)
+    lip_tongue.apply_translation(
+        [wall_mm + lip_mm + clearance / 2, outer_h - tongue_depth, wall_mm + pocket_depth + clearance / 2]
+    )
+
+    cap = trimesh.boolean.union([flange, pocket_tongue, lip_tongue], engine="manifold")
+    if cap is None or cap.is_empty:
+        raise ValueError("Backlight box cap boolean ops produced no geometry")
+    return cap
 
 
 def build_snap_frame(

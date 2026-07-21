@@ -113,6 +113,11 @@ def build_accessory_meshes(params: LithophaneParams) -> dict[str, trimesh.Trimes
         )
         out["backlight_box"] = geometry.repair(box)
 
+        cap = accessories.build_backlight_box_cap(
+            width_mm, height_mm, params.box_wall_mm, params.box_depth_mm, params.box_lip_mm, params.box_tolerance_mm
+        )
+        out["backlight_box_cap"] = geometry.repair(cap)
+
     if params.add_frame:
         frame = accessories.build_snap_frame(
             width_mm, height_mm, params.frame_border_mm, params.frame_depth_mm, params.frame_tolerance_mm
