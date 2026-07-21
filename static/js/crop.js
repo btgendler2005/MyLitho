@@ -29,14 +29,18 @@ export function initCropEditor(viewport, img, changeCallback) {
   new ResizeObserver(render).observe(viewportEl);
 }
 
-export function setImage(file) {
+// initialCrop optionally restores a previously-saved crop (e.g. reopening
+// a project from Recent) instead of resetting to the default "cover" fit.
+// Applied inside the same onload callback that sets naturalW/H, since
+// setting it before the image loads would just get overwritten here.
+export function setImage(file, initialCrop) {
   const url = URL.createObjectURL(file);
   imgEl.onload = () => {
     state.naturalW = imgEl.naturalWidth;
     state.naturalH = imgEl.naturalHeight;
-    state.scale = 1;
-    state.centerX = 0.5;
-    state.centerY = 0.5;
+    state.scale = initialCrop?.crop_scale ?? 1;
+    state.centerX = initialCrop?.crop_center_x ?? 0.5;
+    state.centerY = initialCrop?.crop_center_y ?? 0.5;
     render();
     URL.revokeObjectURL(url);
   };

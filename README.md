@@ -32,6 +32,9 @@ limits.
   contrast, gamma, and invert
 - Output is a watertight, manifold mesh ready to slice directly — no repair
   needed in your slicer
+- **Recent projects** — every STL export is saved locally (photo + every
+  setting), so you can click back into a past order instead of
+  reconstructing it. Stored only on your machine, never uploaded anywhere
 
 ## Run (macOS, easiest)
 
@@ -64,6 +67,11 @@ uvicorn app.main:app --host 127.0.0.1 --port 8420
 Then open http://127.0.0.1:8420 in your browser.
 
 ## Using it
+
+The **Recent** strip at the top saves itself — every time you click
+Download STL, that photo and its full settings get added there. Click a
+thumbnail any time to reopen it exactly as it was, including the crop.
+Hover a tile for a small **×** to remove it from history.
 
 1. Choose a photo.
 2. Set the physical size (width/height in mm) — aspect ratio locks to the
@@ -228,6 +236,12 @@ to stand upright to wrap around a cylinder.
 - The **backlight preview** renders a separate server-side texture (see
   `build_backlight_texture` above) with an unlit material on a black
   background, so thin/bright areas glow and thick/dark areas stay dark.
+- `app/projects.py` — the Recent list's persistence: a small SQLite index
+  (`data/projects.db`) plus the exact original photo bytes (no
+  re-encoding) and a JPEG thumbnail per project, under `data/projects/`.
+  Saved automatically on every STL export, best-effort — a save failure
+  never blocks the actual download. Capped at 200 entries, oldest deleted
+  first. `data/` is gitignored since it can contain customer photos.
 
 ## Notes for production use
 
@@ -238,3 +252,6 @@ to stand upright to wrap around a cylinder.
 - The snap-on frame's pocket depth needs to be deeper than your panel's
   max thickness for the panel to sit flush — increase **Frame Depth** if
   parts are protruding.
+- Project history (photos + settings from past exports) lives in `data/`
+  next to the app. Delete that folder any time to wipe it — it's
+  regenerated automatically on the next export.

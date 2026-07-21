@@ -1,6 +1,7 @@
 import { initViewer, setPreviewMesh, setBacklightMode, loadBacklightTextureFromBase64 } from "./viewer.js";
 import { buildFlatGeometry, buildCurvedGeometry, circleMask, heartMask } from "./meshgen.js";
 import { initCropEditor, setImage as setCropImage, setTargetAspect, resetCrop, getCropParams, setZoom as setCropZoom } from "./crop.js";
+import { refreshRecentProjects, loadProject } from "./projects.js";
 
 const el = (id) => document.getElementById(id);
 
@@ -133,25 +134,73 @@ function updateCropAspect() {
   setTargetAspect(aspect);
 }
 
-el("fileInput").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+// Sets every UI field from a saved project's params (crop is handled
+// separately in loadImageFile, since crop.js needs the image loaded
+// first to know its natural dimensions).
+function applyParams(p) {
+  el("widthMm").value = p.width_mm;
+  el("heightMm").value = p.height_mm;
+  el("minThickness").value = p.min_thickness_mm;
+  el("maxThickness").value = p.max_thickness_mm;
+  el("detail").value = p.detail;
+  el("borderMm").value = p.border_mm;
+  el("shape").value = p.shape;
+  el("curveDegrees").value = p.curve_degrees;
+  el("invert").checked = p.invert;
+  el("brightness").value = p.brightness;
+  el("contrast").value = p.contrast;
+  el("gamma").value = p.gamma;
+  el("hangingHole").checked = p.hanging_hole;
+  el("addBox").checked = p.add_backlight_box;
+  el("boxWall").value = p.box_wall_mm;
+  el("boxDepth").value = p.box_depth_mm;
+  el("boxLip").value = p.box_lip_mm;
+  el("addFrame").checked = p.add_frame;
+  el("frameBorder").value = p.frame_border_mm;
+  el("frameDepth").value = p.frame_depth_mm;
+}
+
+// Shared by both a fresh file-picker upload and reopening a saved
+// project; savedParams (if given) restores the exact crop instead of
+// resetting to the default "cover" fit, and skips the lock-aspect
+// auto-height adjustment since width/height already came from applyParams.
+function loadImageFile(file, savedParams) {
   state.file = file;
   const img = new Image();
   img.onload = () => {
     state.imageAspect = img.naturalWidth / img.naturalHeight;
-    if (el("lockAspect").checked) {
+    if (!savedParams && el("lockAspect").checked) {
       el("heightMm").value = (parseFloat(el("widthMm").value) / state.imageAspect).toFixed(1);
     }
     URL.revokeObjectURL(img.src);
     el("cropSection").hidden = false;
-    setCropImage(file);
-    el("cropZoom").value = 1;
-    el("cropZoomVal").textContent = "1.00x";
+    setCropImage(file, savedParams);
+    const zoom = savedParams ? savedParams.crop_scale : 1;
+    el("cropZoom").value = zoom;
+    el("cropZoomVal").textContent = zoom.toFixed(2) + "x";
     updateCropAspect();
     fetchPreview();
   };
   img.src = URL.createObjectURL(file);
+}
+
+async function handleSelectProject(id) {
+  setStatus("Loading project…");
+  try {
+    const { params: p, file } = await loadProject(id);
+    applyParams(p);
+    updateValLabels();
+    toggleConditionalFields();
+    loadImageFile(file, p);
+  } catch (e) {
+    setStatus(e.message, true);
+  }
+}
+
+el("fileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  loadImageFile(file);
 });
 
 ["widthMm", "heightMm", "borderMm", "invert", "brightness", "contrast", "gamma"].forEach((id) => {
@@ -230,6 +279,7 @@ el("downloadBtn").addEventListener("click", async () => {
     a.remove();
     URL.revokeObjectURL(url);
     setStatus("Done — check your downloads.");
+    refreshRecentProjects(handleSelectProject);
   } catch (e) {
     setStatus(e.message, true);
   } finally {
@@ -243,3 +293,4 @@ el("backlightToggle").addEventListener("change", (e) => {
 
 updateValLabels();
 toggleConditionalFields();
+refreshRecentProjects(handleSelectProject);

@@ -5,10 +5,10 @@ import zipfile
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import lithophane
+from . import lithophane, projects
 from .models import LithophaneParams
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,6 +16,7 @@ STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(title="MyLitho")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+projects.init_db()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -56,6 +57,12 @@ async def generate(image: UploadFile = File(...), params: str = Form(...)) -> St
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Failed to generate mesh: {exc}") from exc
 
+    try:
+        projects.save_project(data, p, image.filename, image.content_type)
+    except Exception as exc:  # noqa: BLE001
+        # History is best-effort -- never block an actual export over it.
+        print(f"[projects] failed to save project history: {exc}")
+
     files: dict[str, bytes] = {"lithophane_panel.stl": panel.export(file_type="stl")}
     for name, mesh in accessory_meshes.items():
         files[f"{name}.stl"] = mesh.export(file_type="stl")
@@ -78,3 +85,38 @@ async def generate(image: UploadFile = File(...), params: str = Form(...)) -> St
         media_type="application/zip",
         headers={"Content-Disposition": 'attachment; filename="mylitho_export.zip"'},
     )
+
+
+@app.get("/api/projects")
+def api_list_projects(limit: int = 30) -> JSONResponse:
+    return JSONResponse(projects.list_projects(limit=limit))
+
+
+@app.get("/api/projects/{project_id}")
+def api_get_project(project_id: int) -> JSONResponse:
+    project = projects.get_project(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return JSONResponse(project)
+
+
+@app.get("/api/projects/{project_id}/thumbnail")
+def project_thumbnail(project_id: int) -> FileResponse:
+    path = projects.get_thumbnail_path(project_id)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Thumbnail not found")
+    return FileResponse(path, media_type="image/jpeg")
+
+
+@app.get("/api/projects/{project_id}/image")
+def project_image(project_id: int) -> FileResponse:
+    path = projects.get_image_path(project_id)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(path)
+
+
+@app.delete("/api/projects/{project_id}")
+def api_delete_project(project_id: int) -> JSONResponse:
+    projects.delete_project(project_id)
+    return JSONResponse({"ok": True})
