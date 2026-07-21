@@ -7,6 +7,31 @@ alternative to itslitho.com for producing lithophanes for an Etsy shop.
 Everything runs on your machine — no cloud processing, no accounts, no rate
 limits.
 
+## Screenshots
+
+<table>
+<tr>
+<td align="center"><b>Source photo</b></td>
+<td align="center"><b>Live preview</b></td>
+<td align="center"><b>Simulated backlight</b></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/source-photo.png" width="260"></td>
+<td><img src="docs/screenshots/preview-normal.png" width="260"></td>
+<td><img src="docs/screenshots/preview-backlight.png" width="260"></td>
+</tr>
+</table>
+
+Same panel, same settings — toggling **Simulate backlight** shows exactly
+how it'll look with a light behind the print, which is the best way to
+judge contrast before committing to a print.
+
+<p align="center">
+  <img src="docs/screenshots/heart-backlight.png" width="460" alt="Heart-shaped ornament of the same photo, backlit">
+  <br>
+  <sub>Same photo, cropped to a heart-shaped ornament</sub>
+</p>
+
 ## Features
 
 - **Live 3D preview** (Three.js) that updates instantly as you drag sliders,
