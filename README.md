@@ -50,8 +50,9 @@ judge contrast before committing to a print.
 - **Optional hanging hole** for ornaments
 - **Optional companion parts**, exported as separate STL files sized to fit
   the panel (border included): an LED backlight box with a matching cap
-  (drop the panel in from the top — gravity plus a lip hold it, no glue —
-  then press the cap on to close the top up) and a snap-on frame (rabbeted
+  (drop the panel in from the top — it slides down and locks into a
+  retaining channel, no glue — then press the cap on to close the top up)
+  and a snap-on frame (rabbeted
   so the panel friction-fits into it)
 - Adjustable size, min/max thickness, mesh detail/resolution, brightness,
   contrast, gamma, and invert
@@ -131,10 +132,13 @@ Hover a tile for a small **×** to remove it from history.
 9. Optionally enable the backlight box and/or snap-on frame (flat shape
    only). These export as their own STL files, sized to fit the panel
    (border included) with a small tolerance. Enabling the box also
-   exports a matching **cap** — drop the panel into the box from the top,
-   then press the cap on to close it up. The box's **Lip** setting
-   controls how much of the panel's edge the retaining lip covers —
-   bigger holds it more securely, smaller shows more of the image.
+   exports a matching **cap** — drop the panel into the box from the top;
+   it slides down through the LED cavity and locks into a retaining
+   channel sized to the panel's own thickness, so it can't tip out the
+   front or slide back into the cavity — then press the cap on to close
+   it up. The box's **Lip** setting controls how much of the panel's edge
+   the retaining channel covers — bigger holds it more securely, smaller
+   shows more of the image.
 10. Click **Download STL**. A single shape downloads as a `.stl`; if you've
     enabled the box or frame it downloads as a `.zip` with all the parts.
 
@@ -234,16 +238,19 @@ to stand upright to wrap around a cylinder.
 - `app/accessories.py` — parametric backlight box, cap, and snap-on frame,
   built from primitive boxes combined with boolean operations
   ([trimesh](https://trimesh.org/), [manifold3d](https://github.com/elalish/manifold) engine).
-  The box's interior is two stages front-to-back: a full-width back pocket
-  for the LEDs and the bulk of the panel, and a narrower front lip near
-  the opening. Both are open at the top, so the panel drops straight down
-  into the back pocket; once seated it can't tip forward out of the box
-  because it's wider than the lip opening, and gravity plus the solid
-  floor hold it on the other three sides — no glue required. Left, right,
-  and bottom are otherwise fully closed, so only the top needs closing up
+  The box's interior is four stages front-to-back: a full-width LED
+  cavity, a narrow "back cap" shoulder, a full-width retaining channel
+  sized to the panel's own thickness (`max_thickness_mm` + tolerance),
+  and a narrow "front cap" shoulder (see `_box_depth_stages()`). All four
+  are open at the top, so the panel drops straight down through the
+  cavity and settles into the channel — once there it's captured
+  front-to-back by both shoulders, so it can neither tip out the front
+  nor slide backward into the cavity, and gravity plus the solid floor
+  hold it on the other three sides — no glue required. Left, right, and
+  bottom are otherwise fully closed, so only the top needs closing up
   afterward — that's what the cap is for: a flat flange that rests on the
-  box's walls with a two-stage "tongue" on its underside (shaped to match
-  the box's own back-pocket/front-lip opening, via a shared
+  box's walls with a four-piece "tongue" on its underside (shaped to
+  match the box's own four-stage opening, via the shared
   `_box_depth_stages()` helper so the two never drift apart) that presses
   down into the gap for a snug, glue-free friction fit. The cord slot cuts
   through the back wall (not the bottom), so the box still sits flat on a
