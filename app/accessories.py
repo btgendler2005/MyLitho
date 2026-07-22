@@ -19,12 +19,22 @@ def _box_at_origin(sx: float, sy: float, sz: float) -> trimesh.Trimesh:
 _EPS = 0.05  # tiny overlap at internal seams so boolean ops don't leave a knife-edge coincident face
 
 
-def _box_depth_stages(depth_mm: float) -> tuple[float, float]:
+def _box_depth_stages(depth_mm: float, panel_thickness_mm: float, tolerance_mm: float) -> tuple[float, float, float]:
     """Shared front-to-back split used by both the box and its cap, so the
-    cap's plug always matches the box's actual opening shape."""
-    lip_depth = min(2.0, depth_mm * 0.3)
-    pocket_depth = max(depth_mm - lip_depth, 3.0)
-    return lip_depth, pocket_depth
+    cap's plug always matches the box's actual opening shape.
+
+    Four stages back to front: LED cavity (full width, open), back cap
+    (narrow -- closes the retaining channel from behind), channel (full
+    width, open, sized to the panel's own thickness), front cap (narrow --
+    closes the channel from the front). The channel is what the panel's
+    edge actually slides down into: it's captured between the back cap and
+    front cap shoulders, instead of just resting against one lip with
+    room to slide around behind it.
+    """
+    cap_depth = min(1.5, depth_mm * 0.15)
+    channel_depth = max(panel_thickness_mm + tolerance_mm, 1.0)
+    cavity_depth = max(depth_mm - 2 * cap_depth - channel_depth, 2.0)
+    return cavity_depth, cap_depth, channel_depth
 
 
 def build_backlight_box(
@@ -34,6 +44,7 @@ def build_backlight_box(
     depth_mm: float,
     lip_mm: float = 2.5,
     tolerance_mm: float = 0.4,
+    panel_thickness_mm: float = 3.0,
     slot_w_mm: float = 10.0,
     slot_h_mm: float = 5.0,
 ) -> trimesh.Trimesh:
@@ -42,39 +53,53 @@ def build_backlight_box(
     fully closed; pair this with build_backlight_box_cap() to close the
     top too, after the panel is loaded.
 
-    The interior is two stages front-to-back: a full-width "back pocket"
-    (LED cavity + most of the panel's depth) and a narrower "front lip"
-    near the opening. Both are open at the top so the panel drops straight
-    down into the back pocket; once seated it can't tip forward out of the
-    box because it's wider than the lip opening, and the solid floor plus
-    left/right/bottom lip strips hold it on the other three sides.
+    The interior is a full-width LED cavity behind a narrower retaining
+    channel near the opening (see _box_depth_stages()). The channel is
+    sized to the panel's own thickness, so once the panel is slid down
+    into it, it's captured front-to-back by a shoulder on both sides --
+    it can't tip forward out of the box, and it can't slide backward
+    into the cavity either. The solid floor plus left/right/bottom
+    channel strips hold it on the other three sides.
     """
-    lip_depth, pocket_depth = _box_depth_stages(depth_mm)
+    cavity_depth, cap_depth, channel_depth = _box_depth_stages(depth_mm, panel_thickness_mm, tolerance_mm)
 
     outer_w = width_mm + 2 * wall_mm
     outer_h = height_mm + 2 * wall_mm
-    total_depth = wall_mm + pocket_depth + lip_depth
+    total_depth = wall_mm + cavity_depth + 2 * cap_depth + channel_depth
 
     outer = _box_at_origin(outer_w, outer_h, total_depth)
 
-    # Back pocket: open at the top (extends past outer_h) so the panel can
-    # slide down into it; a little wider than the panel so it isn't a
-    # zero-clearance fit; stops just short of the lip band (tiny overlap
-    # for a clean seam) so that band is left solid.
-    pocket_z0 = wall_mm - _EPS
-    pocket_z1 = wall_mm + pocket_depth + _EPS
-    back_pocket = _box_at_origin(width_mm + tolerance_mm, outer_h, pocket_z1 - pocket_z0)
-    back_pocket.apply_translation([wall_mm - tolerance_mm / 2, wall_mm, pocket_z0])
-    result = trimesh.boolean.difference([outer, back_pocket], engine="manifold")
+    cavity_z0 = wall_mm
+    backcap_z0 = cavity_z0 + cavity_depth
+    channel_z0 = backcap_z0 + cap_depth
+    frontcap_z0 = channel_z0 + channel_depth
 
-    # Front lip: narrower opening (by lip_mm on each side, plus a solid
-    # band along the bottom) so the panel's face catches on the resulting
-    # ledge instead of falling out the front. Also open at the top -- the
-    # slide-in slot -- so the top itself has no lip material.
-    lip_z0 = wall_mm + pocket_depth - _EPS
-    lip_z1 = total_depth + _EPS
-    front_opening = _box_at_origin(width_mm - 2 * lip_mm, outer_h, lip_z1 - lip_z0)
-    front_opening.apply_translation([wall_mm + lip_mm, wall_mm + lip_mm, lip_z0])
+    # LED cavity: open at the top (extends past outer_h) so the panel can
+    # slide down through it on its way to the channel; a little wider than
+    # the panel so it isn't a zero-clearance fit. Stops just short of the
+    # back cap (tiny overlap for a clean seam) so that band is left solid.
+    cavity = _box_at_origin(width_mm + tolerance_mm, outer_h, cavity_depth + _EPS)
+    cavity.apply_translation([wall_mm - tolerance_mm / 2, wall_mm, cavity_z0 - _EPS])
+    result = trimesh.boolean.difference([outer, cavity], engine="manifold")
+
+    # Back cap: narrower opening (by lip_mm on each side) so this band stays
+    # solid at the edges -- it's the shoulder that stops the panel sliding
+    # backward out of the channel into the cavity. Also open at the top,
+    # like the other stages, so it doesn't block the slide-in path itself.
+    back_cap = _box_at_origin(width_mm - 2 * lip_mm, outer_h, cap_depth + 2 * _EPS)
+    back_cap.apply_translation([wall_mm + lip_mm, wall_mm + lip_mm, backcap_z0 - _EPS])
+    result = trimesh.boolean.difference([result, back_cap], engine="manifold")
+
+    # Channel: the actual slot the panel's edge slides down into and is
+    # captured in, front-to-back, between the back cap and front cap.
+    channel = _box_at_origin(width_mm + tolerance_mm, outer_h, channel_depth + 2 * _EPS)
+    channel.apply_translation([wall_mm - tolerance_mm / 2, wall_mm, channel_z0 - _EPS])
+    result = trimesh.boolean.difference([result, channel], engine="manifold")
+
+    # Front cap: mirrors the back cap -- narrower opening so the panel's
+    # face catches on the resulting ledge instead of tipping out the front.
+    front_opening = _box_at_origin(width_mm - 2 * lip_mm, outer_h, cap_depth + _EPS)
+    front_opening.apply_translation([wall_mm + lip_mm, wall_mm + lip_mm, frontcap_z0 - _EPS])
     result = trimesh.boolean.difference([result, front_opening], engine="manifold")
 
     # Cord slot cuts through the back wall (not the bottom) so the box can
@@ -96,43 +121,62 @@ def build_backlight_box_cap(
     depth_mm: float,
     lip_mm: float = 2.5,
     tolerance_mm: float = 0.4,
+    panel_thickness_mm: float = 3.0,
     flange_thickness: float = 1.5,
     tongue_depth: float = 3.0,
     clearance: float = 0.3,
     overhang_mm: float = 2.0,
 ) -> trimesh.Trimesh:
     """A cap that plugs the top opening of build_backlight_box() after the
-    panel is loaded -- load the panel first (it drops straight down and
-    seats itself under its own weight), then press this in from above.
+    panel is loaded -- load the panel first (it drops down through the
+    cavity into the retaining channel), then press this in from above.
 
     Shaped like a lid: a flat flange that rests on top of the box's walls
     (slightly overhanging them for an easy grip), plus a "tongue" on its
-    underside shaped to match the box's own two-stage opening (wider back
-    pocket, narrower front lip) that presses down into the gap for
-    alignment and friction -- it's a snug press-fit, not glued.
+    underside shaped to match the box's own four-stage opening (see
+    _box_depth_stages()) that presses down into the gap for alignment and
+    friction -- it's a snug press-fit, not glued.
     """
-    lip_depth, pocket_depth = _box_depth_stages(depth_mm)
+    cavity_depth, cap_depth, channel_depth = _box_depth_stages(depth_mm, panel_thickness_mm, tolerance_mm)
 
     outer_w = width_mm + 2 * wall_mm
     outer_h = height_mm + 2 * wall_mm
-    total_depth = wall_mm + pocket_depth + lip_depth
+    total_depth = wall_mm + cavity_depth + 2 * cap_depth + channel_depth
 
     flange = _box_at_origin(outer_w + 2 * overhang_mm, flange_thickness, total_depth + 2 * overhang_mm)
     flange.apply_translation([-overhang_mm, outer_h, -overhang_mm])
 
+    cavity_z0 = wall_mm
+    backcap_z0 = cavity_z0 + cavity_depth
+    channel_z0 = backcap_z0 + cap_depth
+    frontcap_z0 = channel_z0 + channel_depth
+
     pocket_w = width_mm + tolerance_mm - clearance
-    pocket_tongue = _box_at_origin(pocket_w, tongue_depth + _EPS, pocket_depth - clearance)
-    pocket_tongue.apply_translation(
-        [wall_mm - tolerance_mm / 2 + clearance / 2, outer_h - tongue_depth, wall_mm + clearance / 2]
-    )
-
     lip_w = width_mm - 2 * lip_mm - clearance
-    lip_tongue = _box_at_origin(lip_w, tongue_depth + _EPS, lip_depth - clearance)
-    lip_tongue.apply_translation(
-        [wall_mm + lip_mm + clearance / 2, outer_h - tongue_depth, wall_mm + pocket_depth + clearance / 2]
+
+    cavity_tongue = _box_at_origin(pocket_w, tongue_depth + _EPS, cavity_depth - clearance)
+    cavity_tongue.apply_translation(
+        [wall_mm - tolerance_mm / 2 + clearance / 2, outer_h - tongue_depth, cavity_z0 + clearance / 2]
     )
 
-    cap = trimesh.boolean.union([flange, pocket_tongue, lip_tongue], engine="manifold")
+    back_cap_tongue = _box_at_origin(lip_w, tongue_depth + _EPS, cap_depth - clearance)
+    back_cap_tongue.apply_translation(
+        [wall_mm + lip_mm + clearance / 2, outer_h - tongue_depth, backcap_z0 + clearance / 2]
+    )
+
+    channel_tongue = _box_at_origin(pocket_w, tongue_depth + _EPS, channel_depth - clearance)
+    channel_tongue.apply_translation(
+        [wall_mm - tolerance_mm / 2 + clearance / 2, outer_h - tongue_depth, channel_z0 + clearance / 2]
+    )
+
+    front_cap_tongue = _box_at_origin(lip_w, tongue_depth + _EPS, cap_depth - clearance)
+    front_cap_tongue.apply_translation(
+        [wall_mm + lip_mm + clearance / 2, outer_h - tongue_depth, frontcap_z0 + clearance / 2]
+    )
+
+    cap = trimesh.boolean.union(
+        [flange, cavity_tongue, back_cap_tongue, channel_tongue, front_cap_tongue], engine="manifold"
+    )
     if cap is None or cap.is_empty:
         raise ValueError("Backlight box cap boolean ops produced no geometry")
     return cap
