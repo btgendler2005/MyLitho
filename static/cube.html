@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MyLitho — Cube Lamp</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "/static/js/vendor/three.module.js",
+    "three/addons/controls/OrbitControls.js": "/static/js/vendor/OrbitControls.js"
+  }
+}
+</script>
+</head>
+<body>
+<header class="topbar">
+  <h1>MyLitho</h1>
+  <span class="tagline">Cube lamp — 5 lithophane panels in a printable frame, LED puck cradled in the base</span>
+  <a class="nav-link" href="/">&larr; Single panel</a>
+</header>
+
+<main class="layout cube-page">
+  <section class="panel controls">
+    <div class="field">
+      <label>Photos (one per face)</label>
+      <div class="face-net">
+        <div class="face-card" data-face="top" style="grid-area: top;">
+          <label for="file-top">Top</label>
+          <input type="file" id="file-top" accept="image/*" />
+          <div class="crop-viewport face-crop-viewport" id="crop-top">
+            <img id="cropImg-top" alt="" draggable="false" />
+          </div>
+        </div>
+        <div class="face-card" data-face="left" style="grid-area: left;">
+          <label for="file-left">Left</label>
+          <input type="file" id="file-left" accept="image/*" />
+          <div class="crop-viewport face-crop-viewport" id="crop-left">
+            <img id="cropImg-left" alt="" draggable="false" />
+          </div>
+        </div>
+        <div class="face-card" data-face="front" style="grid-area: front;">
+          <label for="file-front">Front</label>
+          <input type="file" id="file-front" accept="image/*" />
+          <div class="crop-viewport face-crop-viewport" id="crop-front">
+            <img id="cropImg-front" alt="" draggable="false" />
+          </div>
+        </div>
+        <div class="face-card" data-face="right" style="grid-area: right;">
+          <label for="file-right">Right</label>
+          <input type="file" id="file-right" accept="image/*" />
+          <div class="crop-viewport face-crop-viewport" id="crop-right">
+            <img id="cropImg-right" alt="" draggable="false" />
+          </div>
+        </div>
+        <div class="face-card" data-face="back" style="grid-area: back;">
+          <label for="file-back">Back</label>
+          <input type="file" id="file-back" accept="image/*" />
+          <div class="crop-viewport face-crop-viewport" id="crop-back">
+            <img id="cropImg-back" alt="" draggable="false" />
+          </div>
+        </div>
+      </div>
+      <p class="crop-hint">Drag a photo to reposition it &middot; scroll to zoom. Each face crops to a square.</p>
+    </div>
+
+    <fieldset class="field-group">
+      <legend>Size &amp; thickness</legend>
+      <div class="field">
+        <label for="edgeMm">Face size: <span class="val" id="edgeMmVal">100mm</span></label>
+        <input type="range" id="edgeMm" min="40" max="200" value="100" step="1" />
+      </div>
+      <div class="field">
+        <label for="minThickness">Min (thinnest / brightest): <span class="val" id="minThicknessVal">0.8mm</span></label>
+        <input type="range" id="minThickness" min="0.3" max="5" value="0.8" step="0.05" />
+      </div>
+      <div class="field">
+        <label for="maxThickness">Max (thickest / darkest): <span class="val" id="maxThicknessVal">3.0mm</span></label>
+        <input type="range" id="maxThickness" min="0.6" max="8" value="3.0" step="0.05" />
+      </div>
+      <div class="field">
+        <label for="detail">Detail (mesh density): <span class="val" id="detailVal">2.5 pts/mm</span></label>
+        <input type="range" id="detail" min="0.8" max="6" value="2.5" step="0.1" />
+      </div>
+    </fieldset>
+
+    <fieldset class="field-group">
+      <legend>Image adjustments (shared by all 5 faces)</legend>
+      <div class="field">
+        <label><input type="checkbox" id="invert" /> Invert (for negative-style photos)</label>
+      </div>
+      <div class="field">
+        <label for="brightness">Brightness: <span class="val" id="brightnessVal">0</span></label>
+        <input type="range" id="brightness" min="-100" max="100" value="0" step="1" />
+      </div>
+      <div class="field">
+        <label for="contrast">Contrast: <span class="val" id="contrastVal">0</span></label>
+        <input type="range" id="contrast" min="-100" max="100" value="0" step="1" />
+      </div>
+      <div class="field">
+        <label for="gamma">Gamma: <span class="val" id="gammaVal">1.0</span></label>
+        <input type="range" id="gamma" min="0.2" max="3" value="1.0" step="0.05" />
+      </div>
+    </fieldset>
+
+    <fieldset class="field-group">
+      <legend>Frame</legend>
+      <div class="field">
+        <label for="postMm">Corner post size: <span class="val" id="postMmVal">8.0mm</span></label>
+        <input type="range" id="postMm" min="4" max="20" value="8" step="0.5" />
+      </div>
+      <div class="field">
+        <label for="grooveDepth">Groove depth: <span class="val" id="grooveDepthVal">3.0mm</span></label>
+        <input type="range" id="grooveDepth" min="1" max="8" value="3" step="0.5" />
+      </div>
+      <div class="field">
+        <label for="tolerance">Fit tolerance: <span class="val" id="toleranceVal">0.40mm</span></label>
+        <input type="range" id="tolerance" min="0" max="2" value="0.4" step="0.05" />
+      </div>
+      <p class="hint-small">Exports 7 files: 5 panels, a base (floor + 4 corner posts), and a top cap. Drop the 4 side panels down into the base's corner grooves and let them rest on the floor; slide the top panel into the cap's rabbet from underneath; press the cap down last to lock everything in place. No glue. A deeper groove holds panels more securely but hides more of each photo's edge; a bigger post size gives more room for that groove.</p>
+    </fieldset>
+
+    <fieldset class="field-group">
+      <legend>LED puck</legend>
+      <div class="field">
+        <label for="puckDiameter">Puck diameter: <span class="val" id="puckDiameterVal">80mm</span></label>
+        <input type="range" id="puckDiameter" min="30" max="150" value="80" step="1" />
+      </div>
+      <div class="field">
+        <label for="puckPocketDepth">Pocket depth: <span class="val" id="puckPocketDepthVal">15.0mm</span></label>
+        <input type="range" id="puckPocketDepth" min="0" max="30" value="15" step="0.5" />
+      </div>
+      <p class="hint-small">The base's floor is solid with a round recess sized to your puck light, plus a shallow channel out to one edge for its cord. Measure your actual puck and set Puck diameter to match (add a couple mm of slack) and Pocket depth to close to its full thickness so it sits set into the base rather than perched on top — the floor grows to stay solid underneath, independent of Corner post size. Set Pocket depth to 0 for a flat floor with no recess.</p>
+    </fieldset>
+
+    <button id="downloadBtn" class="primary" disabled>Download STL bundle (.zip)</button>
+    <p class="status" id="statusMsg"></p>
+  </section>
+
+  <section class="panel viewer-panel">
+    <div class="viewer-toolbar">
+      <span class="viewer-toolbar-hint">Preview shows the 5 panels assembled into the cube (frame not shown).</span>
+    </div>
+    <div id="viewer"></div>
+    <p class="viewer-hint">Drag to orbit &middot; scroll to zoom</p>
+  </section>
+</main>
+
+<script type="module" src="/static/js/cube.js"></script>
+</body>
+</html>

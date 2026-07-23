@@ -1,6 +1,6 @@
 import { initViewer, setPreviewMesh, setBacklightMode, loadBacklightTextureFromBase64 } from "./viewer.js";
 import { buildFlatGeometry, buildCurvedGeometry, circleMask, heartMask } from "./meshgen.js";
-import { initCropEditor, setImage as setCropImage, setTargetAspect, resetCrop, getCropParams, setZoom as setCropZoom } from "./crop.js";
+import { createCropEditor } from "./crop.js";
 import { refreshRecentProjects, loadProject } from "./projects.js";
 
 const el = (id) => document.getElementById(id);
@@ -14,7 +14,7 @@ const state = {
 
 initViewer(el("viewer"));
 
-initCropEditor(el("cropViewport"), el("cropImage"), (params) => {
+const cropEditor = createCropEditor(el("cropViewport"), el("cropImage"), (params) => {
   el("cropZoom").value = params.crop_scale.toFixed(2);
   el("cropZoomVal").textContent = params.crop_scale.toFixed(2) + "x";
   scheduleFetchPreview();
@@ -28,7 +28,7 @@ function paramsFromUI() {
     max_thickness_mm: parseFloat(el("maxThickness").value),
     detail: parseFloat(el("detail").value),
     border_mm: parseFloat(el("borderMm").value),
-    ...getCropParams(),
+    ...cropEditor.getCropParams(),
     shape: el("shape").value,
     curve_degrees: parseFloat(el("curveDegrees").value),
     invert: el("invert").checked,
@@ -131,7 +131,7 @@ function rebuildGeometry() {
 
 function updateCropAspect() {
   const aspect = parseFloat(el("widthMm").value) / parseFloat(el("heightMm").value);
-  setTargetAspect(aspect);
+  cropEditor.setTargetAspect(aspect);
 }
 
 // Sets every UI field from a saved project's params (crop is handled
@@ -174,7 +174,7 @@ function loadImageFile(file, savedParams) {
     }
     URL.revokeObjectURL(img.src);
     el("cropSection").hidden = false;
-    setCropImage(file, savedParams);
+    cropEditor.setImage(file, savedParams);
     const zoom = savedParams ? savedParams.crop_scale : 1;
     el("cropZoom").value = zoom;
     el("cropZoomVal").textContent = zoom.toFixed(2) + "x";
@@ -220,12 +220,12 @@ el("fileInput").addEventListener("change", (e) => {
 });
 
 el("cropZoom").addEventListener("input", () => {
-  setCropZoom(parseFloat(el("cropZoom").value));
+  cropEditor.setZoom(parseFloat(el("cropZoom").value));
   el("cropZoomVal").textContent = parseFloat(el("cropZoom").value).toFixed(2) + "x";
 });
 
 el("cropResetBtn").addEventListener("click", () => {
-  resetCrop();
+  cropEditor.resetCrop();
   el("cropZoom").value = 1;
   el("cropZoomVal").textContent = "1.00x";
 });
