@@ -37,6 +37,18 @@ body {
 .tagline {
   color: var(--text-dim);
   font-size: 0.85rem;
+  flex: 1;
+}
+
+.nav-link {
+  color: var(--accent);
+  font-size: 0.82rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
 }
 
 .layout {
@@ -45,6 +57,41 @@ body {
   gap: 16px;
   padding: 16px;
   height: calc(100vh - 56px);
+}
+
+.layout.cube-page {
+  grid-template-columns: 460px 1fr;
+}
+
+.face-net {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-areas:
+    ".    top   .     ."
+    "left front right back";
+  gap: 6px;
+}
+
+.face-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.face-card label {
+  font-size: 0.7rem;
+}
+
+.face-card input[type="file"] {
+  font-size: 0.62rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.face-crop-viewport {
+  min-height: 70px;
+  max-height: 100px;
 }
 
 .panel {

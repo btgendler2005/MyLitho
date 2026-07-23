@@ -48,3 +48,39 @@ class PreviewResponse(BaseModel):
     heightmap: list[float]
     width_mm: float
     height_mm: float
+
+
+class CubeFaceCrop(BaseModel):
+    crop_scale: float = Field(1.0, ge=1.0, le=6.0)
+    crop_center_x: float = Field(0.5, ge=0.0, le=1.0)
+    crop_center_y: float = Field(0.5, ge=0.0, le=1.0)
+
+
+class CubeLampParams(BaseModel):
+    """One photo per cube face (see cube.FACE_ORDER); everything else
+    -- thickness, detail, image adjustments, frame sizing -- is shared
+    across all 5 panels so the lamp reads as one consistent object.
+    """
+
+    edge_mm: float = Field(100.0, ge=40, le=200)
+    min_thickness_mm: float = Field(0.8, ge=0.3, le=5)
+    max_thickness_mm: float = Field(3.0, ge=0.6, le=8)
+    detail: float = Field(2.5, ge=0.8, le=6.0, description="points per mm")
+
+    invert: bool = False
+    brightness: float = Field(0.0, ge=-100, le=100)
+    contrast: float = Field(0.0, ge=-100, le=100)
+    gamma: float = Field(1.0, ge=0.2, le=3.0)
+
+    post_mm: float = Field(8.0, ge=4, le=20)
+    groove_depth_mm: float = Field(3.0, ge=1.0, le=8.0)
+    tolerance_mm: float = Field(0.4, ge=0.0, le=2)
+
+    puck_diameter_mm: float = Field(80.0, ge=30, le=150)
+    puck_pocket_depth_mm: float = Field(15.0, ge=0.0, le=30.0)
+
+    top: CubeFaceCrop = CubeFaceCrop()
+    front: CubeFaceCrop = CubeFaceCrop()
+    right: CubeFaceCrop = CubeFaceCrop()
+    back: CubeFaceCrop = CubeFaceCrop()
+    left: CubeFaceCrop = CubeFaceCrop()

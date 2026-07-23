@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-let scene, camera, renderer, controls, meshObj, container;
+let scene, camera, renderer, controls, meshObj, groupObj, container;
 let backlightEnabled = false;
 let backlightTexture = null;
 
@@ -77,7 +77,35 @@ export function setPreviewMesh(geometry) {
   const material = backlightEnabled ? backlitMaterial() : normalMaterial();
   meshObj = new THREE.Mesh(geometry, material);
   scene.add(meshObj);
-  frameCamera(geometry);
+  geometry.computeBoundingSphere();
+  frameCameraToSphere(geometry.boundingSphere);
+}
+
+// Cube lamp preview: several independently-positioned panels shown at
+// once (assembled into the cube shape), instead of the single panel
+// setPreviewMesh() handles. Takes a plain THREE.Group whose mesh
+// children/grandchildren have .geometry set but no material -- this
+// module owns assigning and disposing materials, same as it does for
+// the single-mesh path. No backlight simulation here (5 photos would
+// need 5 textures) -- always the normal shaded material.
+export function setPreviewGroup(group) {
+  if (groupObj) {
+    scene.remove(groupObj);
+    groupObj.traverse((o) => {
+      if (o.isMesh) {
+        o.geometry.dispose();
+        o.material.dispose();
+      }
+    });
+  }
+  groupObj = group;
+  groupObj.traverse((o) => {
+    if (o.isMesh) o.material = normalMaterial();
+  });
+  scene.add(groupObj);
+  const box = new THREE.Box3().setFromObject(groupObj);
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  frameCameraToSphere(sphere);
 }
 
 export function setBacklightMode(enabled) {
@@ -106,9 +134,7 @@ export function setBacklightTexture(texture) {
   }
 }
 
-function frameCamera(geometry) {
-  geometry.computeBoundingSphere();
-  const s = geometry.boundingSphere;
+function frameCameraToSphere(s) {
   if (!s || !isFinite(s.radius) || s.radius === 0) return;
   const dist = s.radius * 2.4;
   const dir = new THREE.Vector3(0, -0.75, 0.65).normalize();
