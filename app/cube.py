@@ -174,8 +174,13 @@ def build_cube_base(
     if pocket_depth > 0:
         pocket_radius = min((puck_diameter_mm + tolerance_mm) / 2, outer / 2 - post_mm - 1.0)
         if pocket_radius > 0:
+            # trimesh.creation.cylinder() is centered on its own local
+            # origin (spans +/-height/2), unlike _box_at_origin's boxes
+            # (which sit with their bottom corner at the translation
+            # target) -- so its Z target has to be the pocket's
+            # *midpoint*, not its bottom, to still open at the top face.
             pocket = trimesh.creation.cylinder(radius=pocket_radius, height=pocket_depth + 2 * _EPS, sections=72)
-            pocket.apply_translation([center[0], center[1], floor_mm - pocket_depth + _EPS])
+            pocket.apply_translation([center[0], center[1], floor_mm - pocket_depth / 2])
             result = trimesh.boolean.difference([result, pocket], engine="manifold")
 
             # Cord channel: same depth as the pocket, running from the
