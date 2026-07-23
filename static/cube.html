@@ -72,6 +72,11 @@
         <input type="range" id="edgeMm" min="40" max="200" value="100" step="1" />
       </div>
       <div class="field">
+        <label for="borderMm">Border / mat: <span class="val" id="borderMmVal">0mm</span></label>
+        <input type="range" id="borderMm" min="0" max="30" value="0" step="0.5" />
+      </div>
+      <p class="hint-small">A flat mat shrunk in from each photo's own edge, on all 4 sides — the panel's own outer size stays exactly Face size (unlike the single-panel Border/mat, which grows the panel), since the frame is sized around Face size. A bigger mat gives cleaner, more even contact into the corner-post grooves and against the cap/floor, at the cost of showing less of each photo.</p>
+      <div class="field">
         <label for="minThickness">Min (thinnest / brightest): <span class="val" id="minThicknessVal">0.8mm</span></label>
         <input type="range" id="minThickness" min="0.3" max="5" value="0.8" step="0.05" />
       </div>
