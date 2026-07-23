@@ -152,6 +152,30 @@ def build_backlight_texture(
     return buf.getvalue()
 
 
+def apply_inset_border(img: Image.Image, size_mm: float, border_mm: float) -> Image.Image:
+    """Shrinks `img` and centers it on a black canvas of the same pixel
+    size, leaving a border_mm-wide margin -- once converted to a
+    heightmap, black maps to max thickness (see apply_border), giving
+    the same flat picture-frame-mat look, but WITHOUT changing the
+    image's own physical size the way apply_border does. Cube panels
+    must stay exactly size_mm x size_mm on every edge since the whole
+    frame (post spacing, groove/pocket placement) is derived from that
+    one number -- growing the panel to fit a border, like the
+    single-photo flow does, would grow it right out of its own frame.
+    """
+    if border_mm <= 0:
+        return img
+    w, h = img.size
+    inset_x = round(w * border_mm / size_mm)
+    inset_y = round(h * border_mm / size_mm)
+    inner_w = max(1, w - 2 * inset_x)
+    inner_h = max(1, h - 2 * inset_y)
+    resized = img.resize((inner_w, inner_h), Image.LANCZOS)
+    canvas = Image.new("RGB", (w, h), (0, 0, 0))
+    canvas.paste(resized, (inset_x, inset_y))
+    return canvas
+
+
 def apply_border(
     heightmap: np.ndarray, width_mm: float, height_mm: float, border_mm: float
 ) -> tuple[np.ndarray, float, float]:

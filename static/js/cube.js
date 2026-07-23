@@ -25,6 +25,7 @@ function setStatus(msg, isError = false) {
 
 function updateValLabels() {
   el("edgeMmVal").textContent = el("edgeMm").value + "mm";
+  el("borderMmVal").textContent = el("borderMm").value + "mm";
   el("minThicknessVal").textContent = parseFloat(el("minThickness").value).toFixed(2) + "mm";
   el("maxThicknessVal").textContent = parseFloat(el("maxThickness").value).toFixed(2) + "mm";
   el("detailVal").textContent = parseFloat(el("detail").value).toFixed(1) + " pts/mm";
@@ -41,6 +42,7 @@ function updateValLabels() {
 function paramsFromUI() {
   const p = {
     edge_mm: parseFloat(el("edgeMm").value),
+    border_mm: parseFloat(el("borderMm").value),
     min_thickness_mm: parseFloat(el("minThickness").value),
     max_thickness_mm: parseFloat(el("maxThickness").value),
     detail: parseFloat(el("detail").value),
@@ -174,7 +176,7 @@ function setupFace(face) {
 
 FACES.forEach(setupFace);
 
-["edgeMm", "invert", "brightness", "contrast", "gamma", "detail"].forEach((id) => {
+["edgeMm", "borderMm", "invert", "brightness", "contrast", "gamma", "detail"].forEach((id) => {
   el(id).addEventListener("input", () => {
     updateValLabels();
     scheduleFetchAllFaces();

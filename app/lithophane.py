@@ -142,7 +142,8 @@ def build_accessory_meshes(params: LithophaneParams) -> dict[str, trimesh.Trimes
 def _cube_cropped_image(image_bytes: bytes, face: str, params: CubeLampParams):
     crop = getattr(params, face)
     img = imaging.load_image(image_bytes)
-    return imaging.crop_to_frame(img, params.edge_mm, params.edge_mm, crop.crop_scale, crop.crop_center_x, crop.crop_center_y)
+    img = imaging.crop_to_frame(img, params.edge_mm, params.edge_mm, crop.crop_scale, crop.crop_center_x, crop.crop_center_y)
+    return imaging.apply_inset_border(img, params.edge_mm, params.border_mm)
 
 
 def build_cube_face_heightmap(image_bytes: bytes, face: str, params: CubeLampParams) -> dict:

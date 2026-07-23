@@ -63,6 +63,7 @@ class CubeLampParams(BaseModel):
     """
 
     edge_mm: float = Field(100.0, ge=40, le=200)
+    border_mm: float = Field(0.0, ge=0.0, le=30.0)
     min_thickness_mm: float = Field(0.8, ge=0.3, le=5)
     max_thickness_mm: float = Field(3.0, ge=0.6, le=8)
     detail: float = Field(2.5, ge=0.8, le=6.0, description="points per mm")
